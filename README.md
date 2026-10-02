@@ -4,7 +4,7 @@ A production-grade, multi-page personal portfolio and CMS built for **Shivam Pat
 
 ---
 
-## 🌟 Tech Stack
+## 🌟 Tech Stack 
 
 - **Frontend:** Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS v4, Framer Motion, Lucide React, Sonner
 - **Backend:** Next.js Route Handlers, Server Actions, bcrypt, JWT (jose)
