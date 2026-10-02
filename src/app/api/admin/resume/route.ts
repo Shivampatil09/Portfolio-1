@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { getResume, updateResume, deleteResume } from "@/lib/db";
+import { updateResume, deleteResume } from "@/lib/db";
 import { revalidatePath } from "next/cache";
-import path from "path";
-import fs from "fs/promises";
 
 // Max file size: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -43,32 +41,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Prepare destination folder
-    const resumeDir = path.join(process.cwd(), "public", "resume");
-    await fs.mkdir(resumeDir, { recursive: true });
-
-    // Sanitize and generate safe server file name
-    const timestamp = Date.now();
-    const sanitizedOriginal = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const serverFileName = `resume_${timestamp}_${sanitizedOriginal}`;
-    const filePath = path.join(resumeDir, serverFileName);
-
-    // Save file buffer to disk
+    // Convert to Serverless & Vercel-safe Base64 Data URI
     const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    await fs.writeFile(filePath, buffer);
-
-    // Remove previous old resume file if it existed
-    const currentResume = await getResume();
-    if (currentResume.pdfUrl && currentResume.pdfUrl.startsWith("/resume/")) {
-      const oldFileName = path.basename(currentResume.pdfUrl);
-      const oldPath = path.join(resumeDir, oldFileName);
-      try {
-        await fs.unlink(oldPath);
-      } catch {
-        // ignore if not found
-      }
-    }
+    const base64Data = Buffer.from(arrayBuffer).toString("base64");
+    const dataUri = `data:application/pdf;base64,${base64Data}`;
 
     // Default or custom display file name (must end with .pdf)
     let finalDisplayName = displayFileName || file.name || "Shivam_Patil_Resume.pdf";
@@ -76,9 +52,9 @@ export async function POST(req: NextRequest) {
       finalDisplayName += ".pdf";
     }
 
-    // Update database
+    // Update database directly
     const updated = await updateResume({
-      pdfUrl: `/resume/${serverFileName}`,
+      pdfUrl: dataUri,
       originalFileName: file.name,
       displayFileName: finalDisplayName,
       fileSize: file.size,
@@ -109,18 +85,6 @@ export async function DELETE() {
     const session = await getSession();
     if (!session) {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
-    }
-
-    const currentResume = await getResume();
-    if (currentResume.pdfUrl && currentResume.pdfUrl.startsWith("/resume/")) {
-      const resumeDir = path.join(process.cwd(), "public", "resume");
-      const fileName = path.basename(currentResume.pdfUrl);
-      const filePath = path.join(resumeDir, fileName);
-      try {
-        await fs.unlink(filePath);
-      } catch {
-        // ignore if already deleted
-      }
     }
 
     await deleteResume();

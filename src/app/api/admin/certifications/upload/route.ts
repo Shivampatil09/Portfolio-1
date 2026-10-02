@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import path from "path";
-import fs from "fs/promises";
 
 // Max file size: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -15,21 +13,29 @@ export async function POST(req: NextRequest) {
 
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
-    const oldFileUrl = (formData.get("oldFileUrl") as string)?.trim();
 
     if (!file) {
       return NextResponse.json({ success: false, message: "No certificate file provided" }, { status: 400 });
     }
 
-    // Check mime type / extension
-    const mimeType = file.type.toLowerCase();
-    const ext = path.extname(file.name).toLowerCase();
-    const isImage = ["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(mimeType) || [".jpg", ".jpeg", ".png", ".webp"].includes(ext);
-    const isPdf = mimeType === "application/pdf" || ext === ".pdf";
+    // Determine mime type / format
+    const lowerName = file.name.toLowerCase();
+    let mimeType = file.type.toLowerCase();
+
+    if (!mimeType || mimeType === "application/octet-stream") {
+      if (lowerName.endsWith(".pdf")) mimeType = "application/pdf";
+      else if (lowerName.endsWith(".png")) mimeType = "image/png";
+      else if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg")) mimeType = "image/jpeg";
+      else if (lowerName.endsWith(".webp")) mimeType = "image/webp";
+    }
+
+    const isImage = ["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(mimeType) ||
+      [".jpg", ".jpeg", ".png", ".webp"].some((ext) => lowerName.endsWith(ext));
+    const isPdf = mimeType === "application/pdf" || lowerName.endsWith(".pdf");
 
     if (!isImage && !isPdf) {
       return NextResponse.json(
-        { success: false, message: "Invalid file format. Please upload an image (PNG, JPG, WebP) or PDF." },
+        { success: false, message: "Invalid file format. Please upload a PDF or image (PNG, JPG, WebP)." },
         { status: 400 }
       );
     }
@@ -41,33 +47,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const certsDir = path.join(process.cwd(), "public", "certificates");
-    await fs.mkdir(certsDir, { recursive: true });
-
-    // Clean up old file if replacing
-    if (oldFileUrl && oldFileUrl.startsWith("/certificates/")) {
-      const oldFileName = path.basename(oldFileUrl);
-      const oldPath = path.join(certsDir, oldFileName);
-      try {
-        await fs.unlink(oldPath);
-      } catch {
-        // ignore if not found
-      }
-    }
-
-    // Generate safe file name
-    const timestamp = Date.now();
-    const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const serverFileName = `cert_${timestamp}_${sanitizedName}`;
-    const filePath = path.join(certsDir, serverFileName);
-
-    // Save buffer
+    // Convert to Serverless & Vercel-safe Base64 Data URI
     const arrayBuffer = await file.arrayBuffer();
-    await fs.writeFile(filePath, Buffer.from(arrayBuffer));
+    const base64Data = Buffer.from(arrayBuffer).toString("base64");
+    const dataUri = `data:${isPdf ? "application/pdf" : mimeType || "image/png"};base64,${base64Data}`;
 
     return NextResponse.json({
       success: true,
-      fileUrl: `/certificates/${serverFileName}`,
+      fileUrl: dataUri,
       fileType: isPdf ? "pdf" : "image",
       fileName: file.name,
       message: "Certificate uploaded successfully",

@@ -183,7 +183,7 @@ export function CertificationsManager({ initialCertifications }: CertificationsM
     if (!confirm(`Are you sure you want to delete "${cert.title}"?`)) return;
 
     try {
-      const res = await deleteCertificationAction(cert.id, cert.certificateFileUrl);
+      const res = await deleteCertificationAction(cert.id);
       if (!res.success) throw new Error(res.message);
 
       setCertifications((prev) => prev.filter((c) => c.id !== cert.id));

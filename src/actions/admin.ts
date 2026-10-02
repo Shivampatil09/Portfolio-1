@@ -35,8 +35,6 @@ import {
   updateResume,
 } from "@/lib/db";
 import { revalidatePath } from "next/cache";
-import path from "path";
-import fs from "fs/promises";
 
 // 1. Auth Actions
 export async function loginAdminAction(formData: { username: string; password: string }) {
@@ -293,20 +291,9 @@ export async function updateCertificationAction(
   return { success: true, message: "Certification updated successfully!", data: updated };
 }
 
-export async function deleteCertificationAction(id: string, certificateFileUrl?: string | null) {
+export async function deleteCertificationAction(id: string) {
   const session = await getSession();
   if (!session) return { success: false, message: "Unauthorized." };
-
-  if (certificateFileUrl && certificateFileUrl.startsWith("/certificates/")) {
-    const certsDir = path.join(process.cwd(), "public", "certificates");
-    const fileName = path.basename(certificateFileUrl);
-    const filePath = path.join(certsDir, fileName);
-    try {
-      await fs.unlink(filePath);
-    } catch {
-      // ignore if file doesn't exist
-    }
-  }
 
   await deleteCertification(id);
   revalidatePath("/skills");

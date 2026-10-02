@@ -14,13 +14,29 @@ export async function GET() {
       );
     }
 
+    const downloadName = resume.displayFileName || "Shivam_Patil_Resume.pdf";
+
+    // 1. Handle Base64 Data URI (Vercel & Cloud standard)
+    if (resume.pdfUrl.startsWith("data:application/pdf;base64,")) {
+      const base64Data = resume.pdfUrl.replace("data:application/pdf;base64,", "");
+      const buffer = Buffer.from(base64Data, "base64");
+
+      return new NextResponse(buffer, {
+        status: 200,
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Disposition": `attachment; filename="${downloadName}"`,
+          "Content-Length": buffer.length.toString(),
+        },
+      });
+    }
+
+    // 2. Handle legacy local server file paths if any
     const relativePath = resume.pdfUrl.replace(/^\//, "");
     const filePath = path.join(process.cwd(), "public", relativePath);
 
     try {
       const fileBuffer = await fs.readFile(filePath);
-      const downloadName = resume.displayFileName || "Shivam_Patil_Resume.pdf";
-
       return new NextResponse(fileBuffer, {
         status: 200,
         headers: {
@@ -31,7 +47,7 @@ export async function GET() {
       });
     } catch {
       return NextResponse.json(
-        { success: false, message: "Resume file could not be found on server" },
+        { success: false, message: "Resume file could not be found" },
         { status: 404 }
       );
     }
