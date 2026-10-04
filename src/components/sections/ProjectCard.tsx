@@ -33,18 +33,16 @@ export function ProjectCard({
         ) : (
           <div className="flex flex-col items-center justify-center p-6 text-center space-y-3 relative z-10">
             <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 group-hover:scale-110 group-hover:border-amber-400/60 transition-all">
-              {project.title === "SmartStationary" ? (
-                <Sparkles className="w-7 h-7 text-amber-400" />
-              ) : (
-                <Code2 className="w-7 h-7 text-amber-400" />
-              )}
+              <Code2 className="w-7 h-7 text-amber-400" />
             </div>
             <div>
               <span className="text-base font-bold text-[#faf7f2] group-hover:text-amber-300 transition-colors">
                 {project.title}
               </span>
               <p className="text-[11px] font-mono text-amber-500/70 uppercase tracking-wider mt-0.5">
-                .NET + React Enterprise Solution
+                {project.techStack && project.techStack.length > 0
+                  ? project.techStack.slice(0, 3).join(" • ")
+                  : "Full Stack Project"}
               </p>
             </div>
           </div>

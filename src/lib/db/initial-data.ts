@@ -98,6 +98,56 @@ export interface ContactMessage {
   createdAt: string;
 }
 
+export interface AdminUser {
+  id: string;
+  username: string;
+  passwordHash: string;
+  recoveryEmail: string;
+  status: "active" | "locked" | "inactive";
+  tokenVersion: number;
+  lastLoginAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SafeAdminUser {
+  id: string;
+  username: string;
+  recoveryEmail: string;
+  status: "active" | "locked" | "inactive";
+  tokenVersion: number;
+  lastLoginAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PasswordResetRecord {
+  id: string;
+  adminId: string;
+  email: string;
+  otpHash: string;
+  resetToken?: string | null;
+  attempts: number;
+  maxAttempts: number;
+  resendAvailableAt: string;
+  expiresAt: string;
+  isConsumed: boolean;
+  createdAt: string;
+}
+
+export interface EmailVerificationRecord {
+  id: string;
+  adminId: string;
+  newEmail: string;
+  otpHash: string;
+  attempts: number;
+  maxAttempts: number;
+  resendAvailableAt: string;
+  expiresAt: string;
+  isConsumed: boolean;
+  createdAt: string;
+}
+
 export interface ResumeDetails {
   id: string;
   pdfUrl: string | null;
@@ -111,7 +161,7 @@ export interface ResumeDetails {
 
 export const INITIAL_RESUME: ResumeDetails = {
   id: "resume-1",
-  pdfUrl: null, // No default broken file - user uploads real one
+  pdfUrl: null,
   title: "Shivam Patil - .NET Full Stack Developer Resume",
   summary: "Comprehensive professional profile detailing .NET 8, C#, ASP.NET Core, React, and SQL Server expertise.",
   originalFileName: null,
@@ -126,9 +176,9 @@ export const INITIAL_HERO: HeroProfile = {
   headline: ".NET Full Stack Developer",
   subHeadline: "Specializing in C#, .NET 8, ASP.NET Core Web API, React, TypeScript & SQL Server",
   summary: "Architecting robust enterprise backends, scalable RESTful APIs, and responsive, fluid React frontends with Clean Architecture principles.",
-  profileImageUrl: null, // User can upload/manage via Admin panel
+  profileImageUrl: null,
   email: "patilshivam1280@gmail.com",
-  phone: "+91 98765 43210",
+  phone: null,
   location: "Pune, Maharashtra, India",
   availabilityStatus: "Open for Full-time Roles & Projects",
   primaryCtaText: "Work With Me",
@@ -146,7 +196,7 @@ export const INITIAL_ABOUT: AboutDetails = {
     "On the frontend, I combine React, Next.js, and TypeScript with modern styling systems like Tailwind CSS to deliver intuitive, high-performance web experiences that bridge complex business logic with seamless user design."
   ],
   bioHighlight: "Passionate about building scalable distributed systems, writing clean maintainable code, and solving real-world business challenges.",
-  yearsOfExperience: "2+ Years",
+  yearsOfExperience: "Fresher",
   projectsCompleted: "10+ Projects",
   updatedAt: new Date().toISOString(),
 };
@@ -197,45 +247,6 @@ export const INITIAL_PROJECTS: ProjectItem[] = [
     isFeatured: true,
     orderIndex: 1,
   },
-  {
-    id: "proj-2",
-    title: "Enterprise Clinic & Appointment Hub",
-    slug: "enterprise-clinic-hub",
-    shortDescription: "Healthcare management platform with appointment scheduling, doctor availability tracking, digital prescriptions, and automated reminders.",
-    fullDescription: "Built with ASP.NET Core Web API and Clean Architecture, featuring JWT authentication, automated background workers, and responsive React dashboard.",
-    imageUrl: null,
-    techStack: ["C#", ".NET 8", "ASP.NET Core", "React", "SQL Server", "EF Core", "Zustand"],
-    githubUrl: "https://github.com/Shivampatil09",
-    liveDemoUrl: "https://github.com/Shivampatil09",
-    isFeatured: true,
-    orderIndex: 2,
-  },
-  {
-    id: "proj-3",
-    title: "FinTrack Expense & Portfolio Manager",
-    slug: "fintrack-portfolio-manager",
-    shortDescription: "Personal and enterprise finance tracking portal with multi-currency support, analytics visualizations, and budget alerts.",
-    fullDescription: "High-performance financial analytics dashboard with complex SQL queries, optimized data pipelines, and responsive charts.",
-    imageUrl: null,
-    techStack: [".NET Core", "React.js", "TypeScript", "PostgreSQL", "Tailwind CSS", "REST APIs"],
-    githubUrl: "https://github.com/Shivampatil09",
-    liveDemoUrl: "https://github.com/Shivampatil09",
-    isFeatured: true,
-    orderIndex: 3,
-  },
-  {
-    id: "proj-4",
-    title: "DevWorkflow Task & Sprint Planner",
-    slug: "devworkflow-sprint-planner",
-    shortDescription: "Agile project board and sprint management tool with drag-and-drop workflows, activity audit logs, and team collaboration channels.",
-    fullDescription: "Real-time task tracking platform built with Next.js, TypeScript, and clean API services.",
-    imageUrl: null,
-    techStack: ["Next.js", "React", "TypeScript", "Tailwind CSS", "shadcn/ui", "PostgreSQL"],
-    githubUrl: "https://github.com/Shivampatil09",
-    liveDemoUrl: "https://github.com/Shivampatil09",
-    isFeatured: true,
-    orderIndex: 4,
-  },
 ];
 
 export const INITIAL_EXPERIENCE: ExperienceItem[] = [
@@ -248,10 +259,9 @@ export const INITIAL_EXPERIENCE: ExperienceItem[] = [
     endDate: "Present",
     isCurrent: true,
     responsibilities: [
-      "Guided and mentored aspiring software engineers through technical learning paths, industry-aligned career preparation, and interview readiness.",
-      "Coordinated academic administration, student placement workflows, and industry recruitment drives with technical training teams.",
-      "Assisted students in mastering core software concepts, technical assessment strategies, and enterprise development project preparation.",
-      "Managed candidate profiling, mock technical assessments, and professional development mentorship."
+      "Guided and mentored aspiring software engineers through technical learning paths and interview readiness.",
+      "Coordinated academic administration and student workflows with technical training teams.",
+      "Assisted students in mastering core software concepts and development project preparation."
     ],
     orderIndex: 1,
   },
@@ -261,53 +271,25 @@ export const INITIAL_EDUCATION: EducationItem[] = [
   {
     id: "edu-1",
     degree: "Master of Computer Applications (MCA)",
-    institution: "Pune University / Affiliated Institute",
+    institution: "University / Institute",
     location: "Pune, Maharashtra",
     startYear: "2022",
     endYear: "2024",
-    grade: "First Class with Distinction",
+    grade: "",
     description: "Specialized in Advanced Software Engineering, Distributed Systems, Database Management Systems, and Object-Oriented Architecture.",
     orderIndex: 1,
   },
   {
     id: "edu-2",
     degree: "Bachelor of Computer Applications (BCA)",
-    institution: "University Institute of Computer Studies",
+    institution: "University / Institute",
     location: "Maharashtra, India",
     startYear: "2019",
     endYear: "2022",
-    grade: "First Class",
-    description: "Core foundation in Computer Science, Data Structures & Algorithms, Web Technologies, Database Systems, and Object-Oriented Programming in C#/Java/C++.",
+    grade: "",
+    description: "Core foundation in Computer Science, Data Structures & Algorithms, Web Technologies, Database Systems, and Object-Oriented Programming.",
     orderIndex: 2,
   },
 ];
 
-export const INITIAL_CERTIFICATIONS: CertificationItem[] = [
-  {
-    id: "cert-1",
-    title: ".NET Full Stack Development Certification",
-    issuer: "Technical Training Institute",
-    issueDate: "2023",
-    credentialUrl: "https://github.com/Shivampatil09",
-    badgeIcon: "award",
-    orderIndex: 1,
-  },
-  {
-    id: "cert-2",
-    title: "Building REST APIs with ASP.NET Core Web API",
-    issuer: "Online Technical Academy",
-    issueDate: "2023",
-    credentialUrl: "https://github.com/Shivampatil09",
-    badgeIcon: "code",
-    orderIndex: 2,
-  },
-  {
-    id: "cert-3",
-    title: "Modern React with TypeScript & Next.js",
-    issuer: "Frontend Masters / Online Certification",
-    issueDate: "2024",
-    credentialUrl: "https://github.com/Shivampatil09",
-    badgeIcon: "shield-check",
-    orderIndex: 3,
-  },
-];
+export const INITIAL_CERTIFICATIONS: CertificationItem[] = [];

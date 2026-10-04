@@ -40,7 +40,7 @@ export function HeroSection({ profile }: { profile: HeroProfile }) {
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500" />
               </span>
               <span className="text-xs font-mono font-medium text-amber-300 tracking-wide">
-                Available for .NET Full Stack & Software Roles
+                {profile.availabilityStatus || "Available for .NET Full Stack & Software Roles"}
               </span>
             </motion.div>
 
@@ -107,7 +107,7 @@ export function HeroSection({ profile }: { profile: HeroProfile }) {
               className="flex flex-wrap items-center gap-4 pt-4"
             >
               <Link
-                href="/contact"
+                href={profile.ctaLink || "/contact"}
                 className="group relative inline-flex items-center gap-3 px-7 py-3.5 text-base font-bold text-[#090807] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 rounded-xl shadow-[0_0_25px_rgba(245,158,11,0.35)] hover:shadow-[0_0_35px_rgba(245,158,11,0.5)] hover:brightness-110 active:scale-[0.98] transition-all"
               >
                 <span>{profile.primaryCtaText || "Work With Me"}</span>

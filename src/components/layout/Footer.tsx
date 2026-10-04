@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Code2, Mail, Heart } from "lucide-react";
 import { GithubIcon, LinkedinIcon } from "@/components/ui/brand-icons";
 
@@ -9,6 +12,13 @@ export function Footer({
   githubUrl?: string;
   linkedinUrl?: string;
 }) {
+  const pathname = usePathname();
+
+  // Don't render public footer on any admin pages
+  if (pathname.startsWith("/admin")) {
+    return null;
+  }
+
   return (
     <footer className="border-t border-[#352923] bg-[#0c0908] relative overflow-hidden mt-24">
       {/* Subtle background glow */}

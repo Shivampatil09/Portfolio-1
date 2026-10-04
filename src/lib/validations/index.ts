@@ -11,11 +11,113 @@ export type ContactFormData = z.infer<typeof contactFormSchema>;
 
 // Admin Login Schema
 export const adminLoginSchema = z.object({
-  username: z.string().min(3, "Username is required"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  username: z.string().min(1, "Username / Admin ID is required"),
+  password: z.string().min(1, "Password is required"),
 });
 
 export type AdminLoginData = z.infer<typeof adminLoginSchema>;
+
+// Admin Account Security & Management Schemas
+export const adminIdSchema = z
+  .string()
+  .min(3, "Admin ID must be at least 3 characters")
+  .max(32, "Admin ID must not exceed 32 characters")
+  .regex(/^[a-zA-Z0-9_-]+$/, "Admin ID may only contain letters, numbers, underscores, and hyphens");
+
+export const adminPasswordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+  .regex(/[0-9]/, "Password must contain at least one number");
+
+export const adminRecoveryEmailSchema = z
+  .string()
+  .email("Please provide a valid recovery email address");
+
+export const adminAccountSecuritySchema = z.object({
+  username: adminIdSchema,
+  recoveryEmail: adminRecoveryEmailSchema,
+});
+
+export type AdminAccountSecurityData = z.infer<typeof adminAccountSecuritySchema>;
+
+// Account Security Mutation Schemas (Phase 3)
+export const changeAdminIdSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required"),
+  newUsername: adminIdSchema,
+});
+
+export type ChangeAdminIdData = z.infer<typeof changeAdminIdSchema>;
+
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Current password is required"),
+    newPassword: adminPasswordSchema,
+    confirmPassword: z.string().min(1, "Please confirm your new password"),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "New passwords do not match",
+    path: ["confirmPassword"],
+  });
+
+export type ChangePasswordData = z.infer<typeof changePasswordSchema>;
+
+export const requestEmailChangeSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required"),
+  newEmail: adminRecoveryEmailSchema,
+});
+
+export type RequestEmailChangeData = z.infer<typeof requestEmailChangeSchema>;
+
+export const verifyEmailChangeOtpSchema = z.object({
+  newEmail: adminRecoveryEmailSchema,
+  otp: z
+    .string()
+    .length(6, "Verification code must be exactly 6 digits")
+    .regex(/^\d{6}$/, "Verification code must contain only numbers"),
+  verificationId: z.string().optional(),
+});
+
+export type VerifyEmailChangeOtpData = z.infer<typeof verifyEmailChangeOtpSchema>;
+
+// Password Recovery Schemas
+export const directRecoverySchema = z.object({
+  recoverySecret: z.string().min(1, "Emergency recovery secret is required"),
+});
+
+export type DirectRecoveryData = z.infer<typeof directRecoverySchema>;
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().email("Please provide a valid recovery email address"),
+});
+
+export type ForgotPasswordData = z.infer<typeof forgotPasswordSchema>;
+
+export const verifyOtpSchema = z.object({
+  email: z.string().email("Please provide a valid recovery email address").optional().or(z.literal("")),
+  otp: z
+    .string()
+    .length(6, "Verification code must be exactly 6 digits")
+    .regex(/^\d{6}$/, "Verification code must contain only numbers"),
+  resetId: z.string().optional(),
+});
+
+export type VerifyOtpData = z.infer<typeof verifyOtpSchema>;
+
+export const resetPasswordSubmitSchema = z
+  .object({
+    resetToken: z.string().min(1, "Reset authorization token is required"),
+    newPassword: adminPasswordSchema,
+    confirmPassword: z.string().min(1, "Please confirm your new password"),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
+export type ResetPasswordSubmitData = z.infer<typeof resetPasswordSubmitSchema>;
+
+
 
 // Profile / Hero Update Schema
 export const heroUpdateSchema = z.object({

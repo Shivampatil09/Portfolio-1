@@ -1,15 +1,12 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
-
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "super-secret-key-shivam-patil-portfolio-2026-secure-jwt-token-32chars"
-);
+import { getJwtSecretKey } from "@/lib/auth/jwt";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Only protect admin routes
+  // Only protect admin routes (excluding login)
   if (pathname.startsWith("/admin") && pathname !== "/admin/login") {
     const sessionCookie = request.cookies.get("shivam_admin_session")?.value;
 
@@ -19,7 +16,8 @@ export async function middleware(request: NextRequest) {
     }
 
     try {
-      await jwtVerify(sessionCookie, JWT_SECRET);
+      const secretKey = getJwtSecretKey();
+      await jwtVerify(sessionCookie, secretKey, { algorithms: ["HS256"] });
       return NextResponse.next();
     } catch {
       const loginUrl = new URL("/admin/login", request.url);

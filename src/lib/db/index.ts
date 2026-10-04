@@ -19,8 +19,12 @@ import {
   CertificationItem,
   ContactMessage,
   ResumeDetails,
+  AdminUser,
+  SafeAdminUser,
+  PasswordResetRecord,
+  EmailVerificationRecord,
 } from "./initial-data";
-import { eq } from "drizzle-orm";
+import { eq, sql, and, desc } from "drizzle-orm";
 
 // ─────────────────────────────────────────────────────────────────
 // Fallback in-memory state ONLY used when DATABASE_URL is not configured
@@ -157,8 +161,11 @@ export async function getAboutDetails(): Promise<AboutDetails> {
           id: r.id,
           storyParagraphs: r.storyParagraphs as string[],
           bioHighlight: r.bioHighlight,
-          yearsOfExperience: r.yearsOfExperience ?? "2+ Years",
-          projectsCompleted: r.projectsCompleted ?? "10+",
+          yearsOfExperience:
+            r.yearsOfExperience && r.yearsOfExperience !== "00" && r.yearsOfExperience !== "0"
+              ? r.yearsOfExperience
+              : "Fresher",
+          projectsCompleted: r.projectsCompleted ?? "10+ Projects",
           updatedAt: r.updatedAt.toISOString(),
         };
       }
@@ -430,18 +437,56 @@ export async function getExperience(): Promise<ExperienceItem[]> {
   return [...inMemoryExperience].sort((a, b) => a.orderIndex - b.orderIndex);
 }
 
+export async function addExperienceItem(item: Omit<ExperienceItem, "id">): Promise<ExperienceItem> {
+  const db = getDb();
+  if (db) {
+    try {
+      const inserted = await db.insert(schema.experienceTable).values({
+        role: item.role,
+        company: item.company,
+        location: item.location,
+        startDate: item.startDate,
+        endDate: item.endDate,
+        isCurrent: item.isCurrent,
+        responsibilities: item.responsibilities,
+        orderIndex: item.orderIndex,
+      }).returning();
+      if (inserted.length > 0) {
+        const r = inserted[0];
+        return {
+          id: r.id,
+          role: r.role,
+          company: r.company,
+          location: r.location,
+          startDate: r.startDate,
+          endDate: r.endDate,
+          isCurrent: r.isCurrent,
+          responsibilities: (r.responsibilities as string[]) ?? [],
+          orderIndex: r.orderIndex,
+        };
+      }
+    } catch {
+      // fallthrough
+    }
+  }
+  const newExp: ExperienceItem = { ...item, id: `exp-${Date.now()}` };
+  inMemoryExperience.push(newExp);
+  return newExp;
+}
+
 export async function updateExperienceItem(id: string, item: Partial<ExperienceItem>): Promise<ExperienceItem | null> {
   const db = getDb();
   if (db) {
     try {
       await db.update(schema.experienceTable).set({
-        ...(item.role && { role: item.role }),
-        ...(item.company && { company: item.company }),
-        ...(item.location && { location: item.location }),
-        ...(item.startDate && { startDate: item.startDate }),
-        ...(item.endDate && { endDate: item.endDate }),
+        ...(item.role !== undefined && { role: item.role }),
+        ...(item.company !== undefined && { company: item.company }),
+        ...(item.location !== undefined && { location: item.location }),
+        ...(item.startDate !== undefined && { startDate: item.startDate }),
+        ...(item.endDate !== undefined && { endDate: item.endDate }),
         ...(item.isCurrent !== undefined && { isCurrent: item.isCurrent }),
-        ...(item.responsibilities && { responsibilities: item.responsibilities }),
+        ...(item.responsibilities !== undefined && { responsibilities: item.responsibilities }),
+        ...(item.orderIndex !== undefined && { orderIndex: item.orderIndex }),
       }).where(eq(schema.experienceTable.id, id));
     } catch {
       // fallthrough
@@ -453,6 +498,20 @@ export async function updateExperienceItem(id: string, item: Partial<ExperienceI
     return inMemoryExperience[idx];
   }
   return null;
+}
+
+export async function deleteExperienceItem(id: string): Promise<boolean> {
+  const db = getDb();
+  if (db) {
+    try {
+      await db.delete(schema.experienceTable).where(eq(schema.experienceTable.id, id));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  inMemoryExperience = inMemoryExperience.filter((e) => e.id !== id);
+  return true;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -481,18 +540,56 @@ export async function getEducation(): Promise<EducationItem[]> {
   return [...inMemoryEducation].sort((a, b) => a.orderIndex - b.orderIndex);
 }
 
+export async function addEducationItem(item: Omit<EducationItem, "id">): Promise<EducationItem> {
+  const db = getDb();
+  if (db) {
+    try {
+      const inserted = await db.insert(schema.educationTable).values({
+        degree: item.degree,
+        institution: item.institution,
+        location: item.location,
+        startYear: item.startYear,
+        endYear: item.endYear,
+        grade: item.grade,
+        description: item.description,
+        orderIndex: item.orderIndex,
+      }).returning();
+      if (inserted.length > 0) {
+        const r = inserted[0];
+        return {
+          id: r.id,
+          degree: r.degree,
+          institution: r.institution,
+          location: r.location ?? undefined,
+          startYear: r.startYear,
+          endYear: r.endYear,
+          grade: r.grade ?? undefined,
+          description: r.description ?? undefined,
+          orderIndex: r.orderIndex,
+        };
+      }
+    } catch {
+      // fallthrough
+    }
+  }
+  const newEdu: EducationItem = { ...item, id: `edu-${Date.now()}` };
+  inMemoryEducation.push(newEdu);
+  return newEdu;
+}
+
 export async function updateEducationItem(id: string, item: Partial<EducationItem>): Promise<EducationItem | null> {
   const db = getDb();
   if (db) {
     try {
       await db.update(schema.educationTable).set({
-        ...(item.degree && { degree: item.degree }),
-        ...(item.institution && { institution: item.institution }),
+        ...(item.degree !== undefined && { degree: item.degree }),
+        ...(item.institution !== undefined && { institution: item.institution }),
         ...(item.location !== undefined && { location: item.location }),
-        ...(item.startYear && { startYear: item.startYear }),
-        ...(item.endYear && { endYear: item.endYear }),
+        ...(item.startYear !== undefined && { startYear: item.startYear }),
+        ...(item.endYear !== undefined && { endYear: item.endYear }),
         ...(item.grade !== undefined && { grade: item.grade }),
         ...(item.description !== undefined && { description: item.description }),
+        ...(item.orderIndex !== undefined && { orderIndex: item.orderIndex }),
       }).where(eq(schema.educationTable.id, id));
     } catch {
       // fallthrough
@@ -504,6 +601,20 @@ export async function updateEducationItem(id: string, item: Partial<EducationIte
     return inMemoryEducation[idx];
   }
   return null;
+}
+
+export async function deleteEducationItem(id: string): Promise<boolean> {
+  const db = getDb();
+  if (db) {
+    try {
+      await db.delete(schema.educationTable).where(eq(schema.educationTable.id, id));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  inMemoryEducation = inMemoryEducation.filter((e) => e.id !== id);
+  return true;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -799,3 +910,1021 @@ export async function deleteMessage(id: string): Promise<boolean> {
   inMemoryMessages = inMemoryMessages.filter((m) => m.id !== id);
   return true;
 }
+
+// ─────────────────────────────────────────────────────────────────
+// 10. Admin Accounts (Security & Authentication)
+// ─────────────────────────────────────────────────────────────────
+export class DatabaseQueryError extends Error {
+  constructor(message: string, public cause?: unknown) {
+    super(message);
+    this.name = "DatabaseQueryError";
+  }
+}
+
+let inMemoryAdmin: AdminUser | null = null;
+
+export async function getAdminUserCount(): Promise<number> {
+  if (isDatabaseConfigured()) {
+    const db = getDb();
+    if (!db) {
+      throw new DatabaseQueryError("Database is configured but client could not be initialized");
+    }
+    try {
+      const rows = await db.select({ count: sql<number>`count(*)` }).from(schema.adminUsersTable);
+      return Number(rows[0]?.count ?? 0);
+    } catch (err) {
+      throw new DatabaseQueryError("Failed to query admin users count from database", err);
+    }
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    throw new DatabaseQueryError("Database is not configured in production environment");
+  }
+
+  return inMemoryAdmin ? 1 : 0;
+}
+
+export async function getAdminUserByUsername(username: string): Promise<AdminUser | null> {
+  const cleanUsername = username.trim();
+  if (!cleanUsername) return null;
+
+  if (isDatabaseConfigured()) {
+    const db = getDb();
+    if (!db) {
+      throw new DatabaseQueryError("Database is configured but client could not be initialized");
+    }
+    try {
+      const rows = await db
+        .select()
+        .from(schema.adminUsersTable)
+        .where(eq(schema.adminUsersTable.username, cleanUsername))
+        .limit(1);
+      if (rows.length > 0) {
+        const r = rows[0];
+        return {
+          id: r.id,
+          username: r.username,
+          passwordHash: r.passwordHash,
+          recoveryEmail: r.recoveryEmail,
+          status: (r.status as "active" | "locked" | "inactive") || "active",
+          tokenVersion: r.tokenVersion ?? 1,
+          lastLoginAt: r.lastLoginAt ? r.lastLoginAt.toISOString() : null,
+          createdAt: r.createdAt.toISOString(),
+          updatedAt: r.updatedAt.toISOString(),
+        };
+      }
+      return null; // Genuinely no record found
+    } catch (err) {
+      throw new DatabaseQueryError("Failed to query admin user by username", err);
+    }
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    throw new DatabaseQueryError("Database is not configured in production environment");
+  }
+
+  if (inMemoryAdmin && inMemoryAdmin.username.toLowerCase() === cleanUsername.toLowerCase()) {
+    return inMemoryAdmin;
+  }
+  return null;
+}
+
+export async function getAdminUserById(id: string): Promise<AdminUser | null> {
+  const cleanId = id.trim();
+  if (!cleanId) return null;
+
+  if (isDatabaseConfigured()) {
+    const db = getDb();
+    if (!db) {
+      throw new DatabaseQueryError("Database is configured but client could not be initialized");
+    }
+    try {
+      const rows = await db
+        .select()
+        .from(schema.adminUsersTable)
+        .where(eq(schema.adminUsersTable.id, cleanId))
+        .limit(1);
+      if (rows.length > 0) {
+        const r = rows[0];
+        return {
+          id: r.id,
+          username: r.username,
+          passwordHash: r.passwordHash,
+          recoveryEmail: r.recoveryEmail,
+          status: (r.status as "active" | "locked" | "inactive") || "active",
+          tokenVersion: r.tokenVersion ?? 1,
+          lastLoginAt: r.lastLoginAt ? r.lastLoginAt.toISOString() : null,
+          createdAt: r.createdAt.toISOString(),
+          updatedAt: r.updatedAt.toISOString(),
+        };
+      }
+      return null;
+    } catch (err) {
+      throw new DatabaseQueryError("Failed to query admin user by ID", err);
+    }
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    throw new DatabaseQueryError("Database is not configured in production environment");
+  }
+
+  if (inMemoryAdmin && inMemoryAdmin.id === cleanId) {
+    return inMemoryAdmin;
+  }
+  return null;
+}
+
+export async function getFirstAdminUser(): Promise<AdminUser | null> {
+  if (isDatabaseConfigured()) {
+    const db = getDb();
+    if (!db) return null;
+    try {
+      const rows = await db.select().from(schema.adminUsersTable).limit(1);
+      if (rows.length > 0) {
+        const r = rows[0];
+        return {
+          id: r.id,
+          username: r.username,
+          passwordHash: r.passwordHash,
+          recoveryEmail: r.recoveryEmail,
+          status: (r.status as "active" | "locked" | "inactive") || "active",
+          tokenVersion: r.tokenVersion ?? 1,
+          lastLoginAt: r.lastLoginAt ? r.lastLoginAt.toISOString() : null,
+          createdAt: r.createdAt.toISOString(),
+          updatedAt: r.updatedAt.toISOString(),
+        };
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  if (inMemoryAdmin) return inMemoryAdmin;
+  return null;
+}
+
+export async function getSafeAdminUser(username?: string): Promise<SafeAdminUser | null> {
+  if (isDatabaseConfigured()) {
+    const db = getDb();
+    if (!db) return null;
+    try {
+      let query = db.select().from(schema.adminUsersTable);
+      if (username) {
+        const rows = await query.where(eq(schema.adminUsersTable.username, username.trim())).limit(1);
+        if (rows.length > 0) {
+          const r = rows[0];
+          return {
+            id: r.id,
+            username: r.username,
+            recoveryEmail: r.recoveryEmail,
+            status: (r.status as "active" | "locked" | "inactive") || "active",
+            tokenVersion: r.tokenVersion ?? 1,
+            lastLoginAt: r.lastLoginAt ? r.lastLoginAt.toISOString() : null,
+            createdAt: r.createdAt.toISOString(),
+            updatedAt: r.updatedAt.toISOString(),
+          };
+        }
+      } else {
+        const rows = await query.limit(1);
+        if (rows.length > 0) {
+          const r = rows[0];
+          return {
+            id: r.id,
+            username: r.username,
+            recoveryEmail: r.recoveryEmail,
+            status: (r.status as "active" | "locked" | "inactive") || "active",
+            tokenVersion: r.tokenVersion ?? 1,
+            lastLoginAt: r.lastLoginAt ? r.lastLoginAt.toISOString() : null,
+            createdAt: r.createdAt.toISOString(),
+            updatedAt: r.updatedAt.toISOString(),
+          };
+        }
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  if (process.env.NODE_ENV === "production") return null;
+
+  if (inMemoryAdmin) {
+    return {
+      id: inMemoryAdmin.id,
+      username: inMemoryAdmin.username,
+      recoveryEmail: inMemoryAdmin.recoveryEmail,
+      status: inMemoryAdmin.status,
+      tokenVersion: inMemoryAdmin.tokenVersion ?? 1,
+      lastLoginAt: inMemoryAdmin.lastLoginAt,
+      createdAt: inMemoryAdmin.createdAt,
+      updatedAt: inMemoryAdmin.updatedAt,
+    };
+  }
+  return null;
+}
+
+export async function createAdminUser(data: {
+  username: string;
+  passwordHash: string;
+  recoveryEmail?: string;
+  status?: string;
+}): Promise<AdminUser | null> {
+  const cleanUsername = data.username.trim();
+
+  if (isDatabaseConfigured()) {
+    const db = getDb();
+    if (!db) {
+      throw new DatabaseQueryError("Database is configured but client could not be initialized");
+    }
+    try {
+      // Atomic conditional insert: only insert if no admin user exists in admin_users table
+      const result = await db.execute(sql`
+        INSERT INTO ${schema.adminUsersTable} (
+          "username",
+          "password_hash",
+          "recovery_email",
+          "status",
+          "token_version"
+        )
+        SELECT
+          ${cleanUsername},
+          ${data.passwordHash},
+          ${data.recoveryEmail || "patilshivam1280@gmail.com"},
+          ${data.status || "active"},
+          1
+        WHERE NOT EXISTS (
+          SELECT 1 FROM ${schema.adminUsersTable}
+        )
+        RETURNING "id", "username", "password_hash", "recovery_email", "status", "token_version", "last_login_at", "created_at", "updated_at";
+      `);
+
+      const rows = (result.rows || []) as any[];
+      if (rows.length > 0) {
+        const r = rows[0];
+        return {
+          id: r.id,
+          username: r.username,
+          passwordHash: r.password_hash,
+          recoveryEmail: r.recovery_email,
+          status: (r.status as "active" | "locked" | "inactive") || "active",
+          tokenVersion: r.token_version ?? 1,
+          lastLoginAt: r.last_login_at ? new Date(r.last_login_at).toISOString() : null,
+          createdAt: new Date(r.created_at).toISOString(),
+          updatedAt: new Date(r.updated_at).toISOString(),
+        };
+      }
+      // Zero rows returned means another bootstrap process already created the account
+      return null;
+    } catch (err) {
+      throw new DatabaseQueryError("Failed to create admin user in database", err);
+    }
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    throw new DatabaseQueryError("Database is not configured in production environment");
+  }
+
+  // In-memory fallback (development only)
+  if (inMemoryAdmin) {
+    return null; // Atomic: only 1 admin account permitted
+  }
+
+  inMemoryAdmin = {
+    id: `admin-${Date.now()}`,
+    username: cleanUsername,
+    passwordHash: data.passwordHash,
+    recoveryEmail: data.recoveryEmail || "patilshivam1280@gmail.com",
+    status: (data.status as "active" | "locked" | "inactive") || "active",
+    tokenVersion: 1,
+    lastLoginAt: null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  return inMemoryAdmin;
+}
+
+export async function recordAdminLoginSuccess(id: string): Promise<boolean> {
+  if (isDatabaseConfigured()) {
+    const db = getDb();
+    if (db) {
+      try {
+        await db
+          .update(schema.adminUsersTable)
+          .set({
+            lastLoginAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.adminUsersTable.id, id));
+        return true;
+      } catch {
+        return false;
+      }
+    }
+  }
+
+  if (inMemoryAdmin && inMemoryAdmin.id === id) {
+    inMemoryAdmin.lastLoginAt = new Date().toISOString();
+    inMemoryAdmin.updatedAt = new Date().toISOString();
+    return true;
+  }
+  return false;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// 11. Password Reset & OTP Operations
+// ─────────────────────────────────────────────────────────────────
+let inMemoryResets: PasswordResetRecord[] = [];
+
+export async function getAdminUserByRecoveryEmail(email: string): Promise<AdminUser | null> {
+  const cleanEmail = email.trim().toLowerCase();
+  if (!cleanEmail) return null;
+
+  if (isDatabaseConfigured()) {
+    const db = getDb();
+    if (db) {
+      try {
+        const rows = await db
+          .select()
+          .from(schema.adminUsersTable)
+          .where(sql`lower(${schema.adminUsersTable.recoveryEmail}) = ${cleanEmail}`)
+          .limit(1);
+        if (rows.length > 0) {
+          const r = rows[0];
+          return {
+            id: r.id,
+            username: r.username,
+            passwordHash: r.passwordHash,
+            recoveryEmail: r.recoveryEmail,
+            status: (r.status as "active" | "locked" | "inactive") || "active",
+            tokenVersion: r.tokenVersion ?? 1,
+            lastLoginAt: r.lastLoginAt ? r.lastLoginAt.toISOString() : null,
+            createdAt: r.createdAt.toISOString(),
+            updatedAt: r.updatedAt.toISOString(),
+          };
+        }
+        return null;
+      } catch {
+        return null;
+      }
+    }
+  }
+
+  if (inMemoryAdmin && inMemoryAdmin.recoveryEmail.toLowerCase() === cleanEmail) {
+    return inMemoryAdmin;
+  }
+  return null;
+}
+
+export async function createPasswordResetRequest(data: {
+  adminId: string;
+  email: string;
+  otpHash: string;
+  expiresAt: Date;
+  resendAvailableAt: Date;
+}): Promise<PasswordResetRecord | null> {
+  const cleanEmail = data.email.trim().toLowerCase();
+
+  if (isDatabaseConfigured()) {
+    const db = getDb();
+    if (db) {
+      try {
+        // Invalidate any existing pending resets for this admin
+        await db
+          .update(schema.adminPasswordResetsTable)
+          .set({ isConsumed: true })
+          .where(
+            and(
+              eq(schema.adminPasswordResetsTable.adminId, data.adminId),
+              eq(schema.adminPasswordResetsTable.isConsumed, false)
+            )
+          );
+
+        const inserted = await db
+          .insert(schema.adminPasswordResetsTable)
+          .values({
+            adminId: data.adminId,
+            email: cleanEmail,
+            otpHash: data.otpHash,
+            expiresAt: data.expiresAt,
+            resendAvailableAt: data.resendAvailableAt,
+            attempts: 0,
+            maxAttempts: 5,
+            isConsumed: false,
+          })
+          .returning();
+
+        if (inserted.length > 0) {
+          const r = inserted[0];
+          return {
+            id: r.id,
+            adminId: r.adminId,
+            email: r.email,
+            otpHash: r.otpHash,
+            resetToken: r.resetToken,
+            attempts: r.attempts,
+            maxAttempts: r.maxAttempts,
+            resendAvailableAt: r.resendAvailableAt.toISOString(),
+            expiresAt: r.expiresAt.toISOString(),
+            isConsumed: r.isConsumed,
+            createdAt: r.createdAt.toISOString(),
+          };
+        }
+      } catch {
+        // Fall through to in-memory handling if table does not exist yet
+      }
+    }
+  }
+
+  // Invalidate any in-memory pending resets for this admin
+  inMemoryResets = inMemoryResets.map((item) =>
+    item.adminId === data.adminId ? { ...item, isConsumed: true } : item
+  );
+
+  const resetRecord: PasswordResetRecord = {
+    id: `reset-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+    adminId: data.adminId,
+    email: cleanEmail,
+    otpHash: data.otpHash,
+    resetToken: null,
+    attempts: 0,
+    maxAttempts: 5,
+    resendAvailableAt: data.resendAvailableAt.toISOString(),
+    expiresAt: data.expiresAt.toISOString(),
+    isConsumed: false,
+    createdAt: new Date().toISOString(),
+  };
+  inMemoryResets.push(resetRecord);
+  return resetRecord;
+}
+
+export async function getActivePasswordReset(identifier: {
+  id?: string;
+  email?: string;
+  adminId?: string;
+}): Promise<PasswordResetRecord | null> {
+  if (isDatabaseConfigured()) {
+    const db = getDb();
+    if (db) {
+      try {
+        let query = db
+          .select()
+          .from(schema.adminPasswordResetsTable)
+          .where(eq(schema.adminPasswordResetsTable.isConsumed, false))
+          .orderBy(desc(schema.adminPasswordResetsTable.createdAt))
+          .limit(1);
+
+        if (identifier.id) {
+          query = db
+            .select()
+            .from(schema.adminPasswordResetsTable)
+            .where(
+              and(
+                eq(schema.adminPasswordResetsTable.id, identifier.id),
+                eq(schema.adminPasswordResetsTable.isConsumed, false)
+              )
+            )
+            .limit(1);
+        } else if (identifier.adminId) {
+          query = db
+            .select()
+            .from(schema.adminPasswordResetsTable)
+            .where(
+              and(
+                eq(schema.adminPasswordResetsTable.adminId, identifier.adminId),
+                eq(schema.adminPasswordResetsTable.isConsumed, false)
+              )
+            )
+            .orderBy(desc(schema.adminPasswordResetsTable.createdAt))
+            .limit(1);
+        } else if (identifier.email) {
+          query = db
+            .select()
+            .from(schema.adminPasswordResetsTable)
+            .where(
+              and(
+                sql`lower(${schema.adminPasswordResetsTable.email}) = ${identifier.email.trim().toLowerCase()}`,
+                eq(schema.adminPasswordResetsTable.isConsumed, false)
+              )
+            )
+            .orderBy(desc(schema.adminPasswordResetsTable.createdAt))
+            .limit(1);
+        }
+
+        const rows = await query;
+        if (rows.length > 0) {
+          const r = rows[0];
+          return {
+            id: r.id,
+            adminId: r.adminId,
+            email: r.email,
+            otpHash: r.otpHash,
+            resetToken: r.resetToken,
+            attempts: r.attempts,
+            maxAttempts: r.maxAttempts,
+            resendAvailableAt: r.resendAvailableAt.toISOString(),
+            expiresAt: r.expiresAt.toISOString(),
+            isConsumed: r.isConsumed,
+            createdAt: r.createdAt.toISOString(),
+          };
+        }
+        return null;
+      } catch {
+        // Fall through to in-memory lookup
+      }
+    }
+  }
+
+  const found = inMemoryResets
+    .filter((r) => {
+      if (r.isConsumed) return false;
+      if (identifier.id && r.id !== identifier.id) return false;
+      if (identifier.adminId && r.adminId !== identifier.adminId) return false;
+      if (identifier.email && r.email.toLowerCase() !== identifier.email.trim().toLowerCase()) return false;
+      return true;
+    })
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+
+  return found || null;
+}
+
+export async function incrementPasswordResetAttempts(id: string): Promise<number> {
+  if (isDatabaseConfigured()) {
+    const db = getDb();
+    if (db) {
+      try {
+        const updated = await db
+          .update(schema.adminPasswordResetsTable)
+          .set({ attempts: sql`${schema.adminPasswordResetsTable.attempts} + 1` })
+          .where(eq(schema.adminPasswordResetsTable.id, id))
+          .returning({ attempts: schema.adminPasswordResetsTable.attempts });
+        if (updated.length > 0) {
+          return updated[0].attempts;
+        }
+      } catch {
+        // fall through
+      }
+    }
+  }
+
+  const item = inMemoryResets.find((r) => r.id === id);
+  if (item) {
+    item.attempts += 1;
+    return item.attempts;
+  }
+  return 1;
+}
+
+export async function savePasswordResetToken(id: string, resetToken: string): Promise<boolean> {
+  if (isDatabaseConfigured()) {
+    const db = getDb();
+    if (db) {
+      try {
+        await db
+          .update(schema.adminPasswordResetsTable)
+          .set({ resetToken })
+          .where(eq(schema.adminPasswordResetsTable.id, id));
+        return true;
+      } catch {
+        // fall through
+      }
+    }
+  }
+
+  const item = inMemoryResets.find((r) => r.id === id);
+  if (item) {
+    item.resetToken = resetToken;
+    return true;
+  }
+  return false;
+}
+
+export async function getPasswordResetByToken(resetToken: string): Promise<PasswordResetRecord | null> {
+  const cleanToken = resetToken.trim();
+  if (!cleanToken) return null;
+
+  if (isDatabaseConfigured()) {
+    const db = getDb();
+    if (db) {
+      try {
+        const rows = await db
+          .select()
+          .from(schema.adminPasswordResetsTable)
+          .where(
+            and(
+              eq(schema.adminPasswordResetsTable.resetToken, cleanToken),
+              eq(schema.adminPasswordResetsTable.isConsumed, false)
+            )
+          )
+          .limit(1);
+        if (rows.length > 0) {
+          const r = rows[0];
+          return {
+            id: r.id,
+            adminId: r.adminId,
+            email: r.email,
+            otpHash: r.otpHash,
+            resetToken: r.resetToken,
+            attempts: r.attempts,
+            maxAttempts: r.maxAttempts,
+            resendAvailableAt: r.resendAvailableAt.toISOString(),
+            expiresAt: r.expiresAt.toISOString(),
+            isConsumed: r.isConsumed,
+            createdAt: r.createdAt.toISOString(),
+          };
+        }
+        return null;
+      } catch {
+        // fall through
+      }
+    }
+  }
+
+  const item = inMemoryResets.find(
+    (r) => r.resetToken === cleanToken && !r.isConsumed
+  );
+  return item || null;
+}
+
+export async function completePasswordReset(
+  resetId: string,
+  adminId: string,
+  newPasswordHash: string
+): Promise<boolean> {
+  if (isDatabaseConfigured()) {
+    const db = getDb();
+    if (db) {
+      try {
+        // 1. Update password hash and increment tokenVersion on admin_users to revoke all active JWT sessions
+        await db
+          .update(schema.adminUsersTable)
+          .set({
+            passwordHash: newPasswordHash,
+            tokenVersion: sql`${schema.adminUsersTable.tokenVersion} + 1`,
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.adminUsersTable.id, adminId));
+
+        // 2. Invalidate all reset tokens for this admin
+        await db
+          .update(schema.adminPasswordResetsTable)
+          .set({ isConsumed: true })
+          .where(eq(schema.adminPasswordResetsTable.adminId, adminId));
+
+        return true;
+      } catch {
+        // fall through
+      }
+    }
+  }
+
+  if (inMemoryAdmin && inMemoryAdmin.id === adminId) {
+    inMemoryAdmin.passwordHash = newPasswordHash;
+    inMemoryAdmin.tokenVersion = (inMemoryAdmin.tokenVersion ?? 1) + 1;
+    inMemoryAdmin.updatedAt = new Date().toISOString();
+  }
+
+  inMemoryResets = inMemoryResets.map((r) =>
+    r.adminId === adminId ? { ...r, isConsumed: true } : r
+  );
+  return true;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// 12. Account Security & Recovery Email Verifications (Phase 3)
+// ─────────────────────────────────────────────────────────────────
+
+export async function updateAdminUsername(
+  adminId: string,
+  newUsername: string
+): Promise<boolean> {
+  const cleanUsername = newUsername.trim();
+  if (!cleanUsername) return false;
+
+  if (isDatabaseConfigured()) {
+    const db = getDb();
+    if (db) {
+      try {
+        await db
+          .update(schema.adminUsersTable)
+          .set({
+            username: cleanUsername,
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.adminUsersTable.id, adminId));
+        return true;
+      } catch (err) {
+        throw new DatabaseQueryError("Failed to update admin username in database", err);
+      }
+    }
+  }
+
+  if (inMemoryAdmin && inMemoryAdmin.id === adminId) {
+    inMemoryAdmin.username = cleanUsername;
+    inMemoryAdmin.updatedAt = new Date().toISOString();
+    return true;
+  }
+  return false;
+}
+
+export async function updateAdminPassword(
+  adminId: string,
+  newPasswordHash: string
+): Promise<number> {
+  if (isDatabaseConfigured()) {
+    const db = getDb();
+    if (db) {
+      try {
+        const updated = await db
+          .update(schema.adminUsersTable)
+          .set({
+            passwordHash: newPasswordHash,
+            tokenVersion: sql`${schema.adminUsersTable.tokenVersion} + 1`,
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.adminUsersTable.id, adminId))
+          .returning({ tokenVersion: schema.adminUsersTable.tokenVersion });
+
+        if (updated.length > 0) {
+          return updated[0].tokenVersion;
+        }
+      } catch (err) {
+        throw new DatabaseQueryError("Failed to update admin password in database", err);
+      }
+    }
+  }
+
+  if (inMemoryAdmin && inMemoryAdmin.id === adminId) {
+    inMemoryAdmin.passwordHash = newPasswordHash;
+    inMemoryAdmin.tokenVersion = (inMemoryAdmin.tokenVersion ?? 1) + 1;
+    inMemoryAdmin.updatedAt = new Date().toISOString();
+    return inMemoryAdmin.tokenVersion;
+  }
+  return 2;
+}
+
+let inMemoryEmailVerifications: EmailVerificationRecord[] = [];
+
+export async function createEmailVerificationRequest(data: {
+  adminId: string;
+  newEmail: string;
+  otpHash: string;
+  expiresAt: Date;
+  resendAvailableAt: Date;
+}): Promise<EmailVerificationRecord | null> {
+  const cleanEmail = data.newEmail.trim().toLowerCase();
+
+  if (isDatabaseConfigured()) {
+    const db = getDb();
+    if (db) {
+      try {
+        // Invalidate any pending email verifications for this admin
+        await db
+          .update(schema.adminEmailVerificationsTable)
+          .set({ isConsumed: true })
+          .where(
+            and(
+              eq(schema.adminEmailVerificationsTable.adminId, data.adminId),
+              eq(schema.adminEmailVerificationsTable.isConsumed, false)
+            )
+          );
+
+        const inserted = await db
+          .insert(schema.adminEmailVerificationsTable)
+          .values({
+            adminId: data.adminId,
+            newEmail: cleanEmail,
+            otpHash: data.otpHash,
+            expiresAt: data.expiresAt,
+            resendAvailableAt: data.resendAvailableAt,
+            attempts: 0,
+            maxAttempts: 5,
+            isConsumed: false,
+          })
+          .returning();
+
+        if (inserted.length > 0) {
+          const r = inserted[0];
+          return {
+            id: r.id,
+            adminId: r.adminId,
+            newEmail: r.newEmail,
+            otpHash: r.otpHash,
+            attempts: r.attempts,
+            maxAttempts: r.maxAttempts,
+            resendAvailableAt: r.resendAvailableAt.toISOString(),
+            expiresAt: r.expiresAt.toISOString(),
+            isConsumed: r.isConsumed,
+            createdAt: r.createdAt.toISOString(),
+          };
+        }
+      } catch {
+        // Fall through to in-memory handling
+      }
+    }
+  }
+
+  inMemoryEmailVerifications = inMemoryEmailVerifications.map((item) =>
+    item.adminId === data.adminId ? { ...item, isConsumed: true } : item
+  );
+
+  const verificationRecord: EmailVerificationRecord = {
+    id: `ev-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+    adminId: data.adminId,
+    newEmail: cleanEmail,
+    otpHash: data.otpHash,
+    attempts: 0,
+    maxAttempts: 5,
+    resendAvailableAt: data.resendAvailableAt.toISOString(),
+    expiresAt: data.expiresAt.toISOString(),
+    isConsumed: false,
+    createdAt: new Date().toISOString(),
+  };
+  inMemoryEmailVerifications.push(verificationRecord);
+  return verificationRecord;
+}
+
+export async function getActiveEmailVerification(identifier: {
+  id?: string;
+  adminId?: string;
+  newEmail?: string;
+}): Promise<EmailVerificationRecord | null> {
+  if (isDatabaseConfigured()) {
+    const db = getDb();
+    if (db) {
+      try {
+        let query = db
+          .select()
+          .from(schema.adminEmailVerificationsTable)
+          .where(eq(schema.adminEmailVerificationsTable.isConsumed, false))
+          .orderBy(desc(schema.adminEmailVerificationsTable.createdAt))
+          .limit(1);
+
+        if (identifier.id) {
+          query = db
+            .select()
+            .from(schema.adminEmailVerificationsTable)
+            .where(
+              and(
+                eq(schema.adminEmailVerificationsTable.id, identifier.id),
+                eq(schema.adminEmailVerificationsTable.isConsumed, false)
+              )
+            )
+            .limit(1);
+        } else if (identifier.adminId) {
+          query = db
+            .select()
+            .from(schema.adminEmailVerificationsTable)
+            .where(
+              and(
+                eq(schema.adminEmailVerificationsTable.adminId, identifier.adminId),
+                eq(schema.adminEmailVerificationsTable.isConsumed, false)
+              )
+            )
+            .orderBy(desc(schema.adminEmailVerificationsTable.createdAt))
+            .limit(1);
+        } else if (identifier.newEmail) {
+          query = db
+            .select()
+            .from(schema.adminEmailVerificationsTable)
+            .where(
+              and(
+                sql`lower(${schema.adminEmailVerificationsTable.newEmail}) = ${identifier.newEmail.trim().toLowerCase()}`,
+                eq(schema.adminEmailVerificationsTable.isConsumed, false)
+              )
+            )
+            .orderBy(desc(schema.adminEmailVerificationsTable.createdAt))
+            .limit(1);
+        }
+
+        const rows = await query;
+        if (rows.length > 0) {
+          const r = rows[0];
+          return {
+            id: r.id,
+            adminId: r.adminId,
+            newEmail: r.newEmail,
+            otpHash: r.otpHash,
+            attempts: r.attempts,
+            maxAttempts: r.maxAttempts,
+            resendAvailableAt: r.resendAvailableAt.toISOString(),
+            expiresAt: r.expiresAt.toISOString(),
+            isConsumed: r.isConsumed,
+            createdAt: r.createdAt.toISOString(),
+          };
+        }
+        return null;
+      } catch {
+        // Fall through to in-memory lookup
+      }
+    }
+  }
+
+  const found = inMemoryEmailVerifications
+    .filter((r) => {
+      if (r.isConsumed) return false;
+      if (identifier.id && r.id !== identifier.id) return false;
+      if (identifier.adminId && r.adminId !== identifier.adminId) return false;
+      if (identifier.newEmail && r.newEmail.toLowerCase() !== identifier.newEmail.trim().toLowerCase()) return false;
+      return true;
+    })
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+
+  return found || null;
+}
+
+export async function incrementEmailVerificationAttempts(id: string): Promise<number> {
+  if (isDatabaseConfigured()) {
+    const db = getDb();
+    if (db) {
+      try {
+        const updated = await db
+          .update(schema.adminEmailVerificationsTable)
+          .set({ attempts: sql`${schema.adminEmailVerificationsTable.attempts} + 1` })
+          .where(eq(schema.adminEmailVerificationsTable.id, id))
+          .returning({ attempts: schema.adminEmailVerificationsTable.attempts });
+        if (updated.length > 0) {
+          return updated[0].attempts;
+        }
+      } catch {
+        // fall through
+      }
+    }
+  }
+
+  const item = inMemoryEmailVerifications.find((r) => r.id === id);
+  if (item) {
+    item.attempts += 1;
+    return item.attempts;
+  }
+  return 1;
+}
+
+export async function confirmEmailVerification(
+  verificationId: string,
+  adminId: string,
+  newEmail: string
+): Promise<boolean> {
+  const cleanEmail = newEmail.trim().toLowerCase();
+
+  if (isDatabaseConfigured()) {
+    const db = getDb();
+    if (db) {
+      try {
+        // 1. Update recovery email on admin_users table
+        await db
+          .update(schema.adminUsersTable)
+          .set({
+            recoveryEmail: cleanEmail,
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.adminUsersTable.id, adminId));
+
+        // 2. Mark this and any other pending verifications as consumed
+        await db
+          .update(schema.adminEmailVerificationsTable)
+          .set({ isConsumed: true })
+          .where(eq(schema.adminEmailVerificationsTable.adminId, adminId));
+
+        return true;
+      } catch (err) {
+        throw new DatabaseQueryError("Failed to confirm email verification in database", err);
+      }
+    }
+  }
+
+  if (inMemoryAdmin && inMemoryAdmin.id === adminId) {
+    inMemoryAdmin.recoveryEmail = cleanEmail;
+    inMemoryAdmin.updatedAt = new Date().toISOString();
+  }
+
+  inMemoryEmailVerifications = inMemoryEmailVerifications.map((r) =>
+    r.adminId === adminId ? { ...r, isConsumed: true } : r
+  );
+  return true;
+}
+
+export async function invalidateEmailVerification(id: string): Promise<boolean> {
+  if (isDatabaseConfigured()) {
+    const db = getDb();
+    if (db) {
+      try {
+        await db
+          .update(schema.adminEmailVerificationsTable)
+          .set({ isConsumed: true })
+          .where(eq(schema.adminEmailVerificationsTable.id, id));
+        return true;
+      } catch {
+        return false;
+      }
+    }
+  }
+
+  inMemoryEmailVerifications = inMemoryEmailVerifications.map((item) =>
+    item.id === id ? { ...item, isConsumed: true } : item
+  );
+  return true;
+}
+
+
+

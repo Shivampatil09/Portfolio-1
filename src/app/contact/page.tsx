@@ -79,29 +79,33 @@ export default async function ContactPage() {
                   </div>
                 )}
 
-                <div className="flex items-start gap-3.5">
-                  <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
-                    <MapPin className="w-4 h-4" />
+                {profile.location && (
+                  <div className="flex items-start gap-3.5">
+                    <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
+                      <MapPin className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-xs text-[#a39687] block font-mono">Location</span>
+                      <span className="text-sm font-semibold text-[#faf7f2]">
+                        {profile.location}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-xs text-[#a39687] block font-mono">Location</span>
-                    <span className="text-sm font-semibold text-[#faf7f2]">
-                      {profile.location || "Pune, Maharashtra, India"}
-                    </span>
-                  </div>
-                </div>
+                )}
 
-                <div className="flex items-start gap-3.5">
-                  <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
-                    <Clock className="w-4 h-4" />
+                {profile.availabilityStatus && (
+                  <div className="flex items-start gap-3.5">
+                    <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
+                      <Clock className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-xs text-[#a39687] block font-mono">Availability</span>
+                      <span className="text-sm font-semibold text-[#faf7f2]">
+                        {profile.availabilityStatus}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-xs text-[#a39687] block font-mono">Availability</span>
-                    <span className="text-sm font-semibold text-[#faf7f2]">
-                      {profile.availabilityStatus || "Typically within 24 hours"}
-                    </span>
-                  </div>
-                </div>
+                )}
               </div>
 
               {/* Direct Social Links */}
@@ -111,25 +115,29 @@ export default async function ContactPage() {
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <a
-                    href={profile.githubUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2.5 p-3 rounded-xl bg-[#14100e] border border-[#352923] text-xs font-semibold text-[#f6f2ec] hover:border-amber-500/40 hover:text-amber-300 transition-all"
-                  >
-                    <GithubIcon className="w-4 h-4 text-amber-400" />
-                    <span>GitHub Profile</span>
-                  </a>
+                  {profile.githubUrl && (
+                    <a
+                      href={profile.githubUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2.5 p-3 rounded-xl bg-[#14100e] border border-[#352923] text-xs font-semibold text-[#f6f2ec] hover:border-amber-500/40 hover:text-amber-300 transition-all"
+                    >
+                      <GithubIcon className="w-4 h-4 text-amber-400" />
+                      <span>GitHub Profile</span>
+                    </a>
+                  )}
 
-                  <a
-                    href={linkedinTarget}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2.5 p-3 rounded-xl bg-[#14100e] border border-[#352923] text-xs font-semibold text-[#f6f2ec] hover:border-amber-500/40 hover:text-amber-300 transition-all"
-                  >
-                    <LinkedinIcon className="w-4 h-4 text-amber-400" />
-                    <span>LinkedIn Profile</span>
-                  </a>
+                  {profile.linkedinUrl && (
+                    <a
+                      href={linkedinTarget}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2.5 p-3 rounded-xl bg-[#14100e] border border-[#352923] text-xs font-semibold text-[#f6f2ec] hover:border-amber-500/40 hover:text-amber-300 transition-all"
+                    >
+                      <LinkedinIcon className="w-4 h-4 text-amber-400" />
+                      <span>LinkedIn Profile</span>
+                    </a>
+                  )}
                 </div>
               </div>
 
@@ -139,7 +147,7 @@ export default async function ContactPage() {
                   <CheckCircle2 className="w-4 h-4" /> Available for Opportunities
                 </div>
                 <p>
-                  Specializing in Full Stack .NET (ASP.NET Core Web API, EF Core, SQL Server) + Modern React.
+                  {profile.headline} — {profile.subHeadline || profile.summary}
                 </p>
               </div>
             </div>

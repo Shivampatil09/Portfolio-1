@@ -1,6 +1,7 @@
 "use server";
 
 import {
+  authenticateAdmin,
   validateAdminCredentials,
   createSessionToken,
   setSessionCookie,
@@ -21,9 +22,13 @@ import {
   updateProject,
   deleteProject,
   getExperience,
+  addExperienceItem,
   updateExperienceItem,
+  deleteExperienceItem,
   getEducation,
+  addEducationItem,
   updateEducationItem,
+  deleteEducationItem,
   getCertifications,
   addCertification,
   updateCertification,
@@ -33,25 +38,67 @@ import {
   deleteMessage,
   getResume,
   updateResume,
+  getSafeAdminUser,
 } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 
 // 1. Auth Actions
 export async function loginAdminAction(formData: { username: string; password: string }) {
-  const isValid = validateAdminCredentials(formData.username.trim(), formData.password);
-  if (!isValid) {
-    return { success: false, message: "Invalid username or password." };
+  const result = await authenticateAdmin(formData.username.trim(), formData.password);
+  if (!result.success || !result.session) {
+    return { success: false, message: result.message || "Invalid username or password." };
   }
 
-  const token = await createSessionToken({ username: formData.username, role: "admin" });
+  const token = await createSessionToken(result.session);
   await setSessionCookie(token);
 
-  return { success: true, message: "Authentication successful." };
+  return { success: true, message: result.message || "Authentication successful." };
 }
 
 export async function logoutAdminAction() {
   await clearSessionCookie();
   return { success: true };
+}
+
+function maskEmailAddress(email?: string | null): string {
+  if (!email || !email.includes("@")) return "Not Configured";
+  const [local, domain] = email.split("@");
+  if (!local || !domain) return "Not Configured";
+  return `${local.charAt(0)}•••@${domain}`;
+}
+
+export async function getAdminAccountSecurityAction() {
+  const session = await getSession();
+  if (!session) return { success: false, message: "Unauthorized." };
+
+  const admin = await getSafeAdminUser(session.username);
+  if (!admin) {
+    return {
+      success: true,
+      data: {
+        id: session.adminId || null,
+        username: session.username,
+        maskedRecoveryEmail: "Not Configured",
+        status: "pending_initialization",
+        lastLoginAt: null,
+        createdAt: null,
+        updatedAt: null,
+      },
+    };
+  }
+
+  return {
+    success: true,
+    data: {
+      id: admin.id,
+      username: admin.username,
+      maskedRecoveryEmail: maskEmailAddress(admin.recoveryEmail),
+      status: admin.status,
+      lastLoginAt: admin.lastLoginAt,
+      createdAt: admin.createdAt,
+      updatedAt: admin.updatedAt,
+    },
+  };
 }
 
 // 2. Profile & Photo Actions
@@ -65,12 +112,19 @@ export async function updateHeroProfileAction(data: {
   githubUrl: string;
   linkedinUrl: string;
   profileImageUrl?: string | null;
+  email?: string;
+  phone?: string | null;
+  location?: string;
+  availabilityStatus?: string;
 }) {
   const session = await getSession();
   if (!session) return { success: false, message: "Unauthorized. Please sign in." };
 
   await updateHeroProfile(data);
   revalidatePath("/");
+  revalidatePath("/about");
+  revalidatePath("/contact");
+  revalidatePath("/admin/profile");
   revalidatePath("/admin/dashboard");
   return { success: true, message: "Profile information updated successfully!" };
 }
@@ -82,6 +136,7 @@ export async function updateProfilePhotoAction(profileImageUrl: string | null) {
   await updateHeroProfile({ profileImageUrl });
   revalidatePath("/");
   revalidatePath("/about");
+  revalidatePath("/admin/profile");
   revalidatePath("/admin/dashboard");
   return {
     success: true,
@@ -100,7 +155,9 @@ export async function updateAboutDetailsAction(data: {
   if (!session) return { success: false, message: "Unauthorized." };
 
   await updateAboutDetails(data);
+  revalidatePath("/");
   revalidatePath("/about");
+  revalidatePath("/admin/about");
   revalidatePath("/admin/dashboard");
   return { success: true, message: "About details updated successfully!" };
 }
@@ -300,4 +357,146 @@ export async function deleteCertificationAction(id: string) {
   revalidatePath("/about");
   revalidatePath("/admin/certifications");
   return { success: true, message: "Certification deleted successfully!" };
+}
+
+// 9. Experience Actions
+export async function addExperienceAction(data: {
+  role: string;
+  company: string;
+  location: string;
+  startDate: string;
+  endDate: string;
+  isCurrent: boolean;
+  responsibilities: string[];
+  orderIndex: number;
+}) {
+  const session = await getSession();
+  if (!session) return { success: false, message: "Unauthorized." };
+
+  const newExp = await addExperienceItem(data);
+  revalidatePath("/about");
+  revalidatePath("/resume");
+  revalidatePath("/admin/experience");
+  revalidatePath("/admin/dashboard");
+  return { success: true, message: "Experience entry added successfully!", data: newExp };
+}
+
+export async function updateExperienceAction(
+  id: string,
+  data: Partial<{
+    role: string;
+    company: string;
+    location: string;
+    startDate: string;
+    endDate: string;
+    isCurrent: boolean;
+    responsibilities: string[];
+    orderIndex: number;
+  }>
+) {
+  const session = await getSession();
+  if (!session) return { success: false, message: "Unauthorized." };
+
+  const updated = await updateExperienceItem(id, data);
+  revalidatePath("/about");
+  revalidatePath("/resume");
+  revalidatePath("/admin/experience");
+  revalidatePath("/admin/dashboard");
+  return { success: true, message: "Experience entry updated successfully!", data: updated };
+}
+
+export async function deleteExperienceAction(id: string) {
+  const session = await getSession();
+  if (!session) return { success: false, message: "Unauthorized." };
+
+  await deleteExperienceItem(id);
+  revalidatePath("/about");
+  revalidatePath("/resume");
+  revalidatePath("/admin/experience");
+  revalidatePath("/admin/dashboard");
+  return { success: true, message: "Experience entry deleted successfully!" };
+}
+
+export async function reorderExperienceAction(items: { id: string; orderIndex: number }[]) {
+  const session = await getSession();
+  if (!session) return { success: false, message: "Unauthorized." };
+
+  for (const item of items) {
+    await updateExperienceItem(item.id, { orderIndex: item.orderIndex });
+  }
+  revalidatePath("/about");
+  revalidatePath("/resume");
+  revalidatePath("/admin/experience");
+  return { success: true, message: "Order updated successfully!" };
+}
+
+// 10. Education Actions
+export async function addEducationAction(data: {
+  degree: string;
+  institution: string;
+  location?: string;
+  startYear: string;
+  endYear: string;
+  grade?: string;
+  description?: string;
+  orderIndex: number;
+}) {
+  const session = await getSession();
+  if (!session) return { success: false, message: "Unauthorized." };
+
+  const newEdu = await addEducationItem(data);
+  revalidatePath("/about");
+  revalidatePath("/resume");
+  revalidatePath("/admin/education");
+  revalidatePath("/admin/dashboard");
+  return { success: true, message: "Education entry added successfully!", data: newEdu };
+}
+
+export async function updateEducationAction(
+  id: string,
+  data: Partial<{
+    degree: string;
+    institution: string;
+    location?: string;
+    startYear: string;
+    endYear: string;
+    grade?: string;
+    description?: string;
+    orderIndex: number;
+  }>
+) {
+  const session = await getSession();
+  if (!session) return { success: false, message: "Unauthorized." };
+
+  const updated = await updateEducationItem(id, data);
+  revalidatePath("/about");
+  revalidatePath("/resume");
+  revalidatePath("/admin/education");
+  revalidatePath("/admin/dashboard");
+  return { success: true, message: "Education entry updated successfully!", data: updated };
+}
+
+export async function deleteEducationAction(id: string) {
+  const session = await getSession();
+  if (!session) return { success: false, message: "Unauthorized." };
+
+  await deleteEducationItem(id);
+  revalidatePath("/about");
+  revalidatePath("/resume");
+  revalidatePath("/admin/education");
+  revalidatePath("/admin/dashboard");
+  return { success: true, message: "Education entry deleted successfully!" };
+}
+
+export async function reorderEducationAction(items: { id: string; orderIndex: number }[]) {
+  const session = await getSession();
+  if (!session) return { success: false, message: "Unauthorized." };
+
+  for (const item of items) {
+    await updateEducationItem(item.id, { orderIndex: item.orderIndex });
+  }
+  revalidatePath("/about");
+  revalidatePath("/resume");
+  revalidatePath("/admin/education");
+  return { success: true, message: "Order updated successfully!" };
 }

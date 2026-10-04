@@ -24,8 +24,8 @@ export const aboutDetailsTable = pgTable("about_details", {
   id: uuid("id").defaultRandom().primaryKey(),
   storyParagraphs: jsonb("story_paragraphs").$type<string[]>().notNull(),
   bioHighlight: text("bio_highlight").notNull(),
-  yearsOfExperience: text("years_of_experience").default("2+ Years"),
-  projectsCompleted: text("projects_completed").default("15+"),
+  yearsOfExperience: text("years_of_experience").default("Fresher"),
+  projectsCompleted: text("projects_completed").default("10+ Projects"),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
@@ -130,5 +130,40 @@ export const adminUsersTable = pgTable("admin_users", {
   id: uuid("id").defaultRandom().primaryKey(),
   username: text("username").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
+  recoveryEmail: text("recovery_email").notNull().default("patilshivam1280@gmail.com"),
+  status: text("status").notNull().default("active"),
+  tokenVersion: integer("token_version").notNull().default(1),
+  lastLoginAt: timestamp("last_login_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Admin Password Reset Tokens / OTPs
+export const adminPasswordResetsTable = pgTable("admin_password_resets", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  adminId: uuid("admin_id").references(() => adminUsersTable.id, { onDelete: "cascade" }).notNull(),
+  email: text("email").notNull(),
+  otpHash: text("otp_hash").notNull(),
+  resetToken: text("reset_token"),
+  attempts: integer("attempts").default(0).notNull(),
+  maxAttempts: integer("max_attempts").default(5).notNull(),
+  resendAvailableAt: timestamp("resend_available_at").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  isConsumed: boolean("is_consumed").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+// Admin Recovery Email Verification OTPs
+export const adminEmailVerificationsTable = pgTable("admin_email_verifications", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  adminId: uuid("admin_id").references(() => adminUsersTable.id, { onDelete: "cascade" }).notNull(),
+  newEmail: text("new_email").notNull(),
+  otpHash: text("otp_hash").notNull(),
+  attempts: integer("attempts").default(0).notNull(),
+  maxAttempts: integer("max_attempts").default(5).notNull(),
+  resendAvailableAt: timestamp("resend_available_at").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  isConsumed: boolean("is_consumed").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+

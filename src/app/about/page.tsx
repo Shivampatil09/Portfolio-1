@@ -4,7 +4,7 @@ import { ArrowRight, User, Briefcase, GraduationCap, Code2, Sparkles, CheckCircl
 import { PageTransition } from "@/components/layout/PageTransition";
 import { ExperienceTimeline } from "@/components/sections/ExperienceTimeline";
 import { EducationTimeline } from "@/components/sections/EducationTimeline";
-import { getAboutDetails, getExperience, getEducation } from "@/lib/db";
+import { getAboutDetails, getExperience, getEducation, getHeroProfile, getSkills } from "@/lib/db";
 
 export const metadata: Metadata = {
   title: "About & Experience | Shivam Patil - .NET Full Stack Developer",
@@ -15,11 +15,15 @@ export const metadata: Metadata = {
 export const revalidate = 0;
 
 export default async function AboutPage() {
-  const [about, experiences, educations] = await Promise.all([
+  const [about, experiences, educations, profile, allSkills] = await Promise.all([
     getAboutDetails(),
     getExperience(),
     getEducation(),
+    getHeroProfile(),
+    getSkills(),
   ]);
+
+  const featuredSkills = allSkills.filter((s) => s.isFeatured).slice(0, 4);
 
   return (
     <PageTransition>
@@ -31,7 +35,7 @@ export default async function AboutPage() {
             <User className="w-3.5 h-3.5" /> Developer Story & Background
           </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold text-[#faf7f2] tracking-tight">
-            About <span className="text-gradient-gold">Shivam Patil</span>
+            About <span className="text-gradient-gold">{profile.fullName}</span>
           </h1>
           <p className="text-base sm:text-lg text-[#b8ada0] leading-relaxed">
             {about.bioHighlight}
@@ -53,24 +57,16 @@ export default async function AboutPage() {
                 ))}
               </div>
 
-              <div className="pt-4 border-t border-[#352923] grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="flex items-center gap-2.5 text-xs text-[#cfc5b8]">
-                  <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
-                  <span>C# / .NET 8 / ASP.NET Core Web API</span>
+              {featuredSkills.length > 0 && (
+                <div className="pt-4 border-t border-[#352923] grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {featuredSkills.map((skill) => (
+                    <div key={skill.id} className="flex items-center gap-2.5 text-xs text-[#cfc5b8]">
+                      <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span>{skill.name}</span>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex items-center gap-2.5 text-xs text-[#cfc5b8]">
-                  <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
-                  <span>React / TypeScript / Next.js</span>
-                </div>
-                <div className="flex items-center gap-2.5 text-xs text-[#cfc5b8]">
-                  <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
-                  <span>Entity Framework Core & SQL Server</span>
-                </div>
-                <div className="flex items-center gap-2.5 text-xs text-[#cfc5b8]">
-                  <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
-                  <span>Clean Architecture & RESTful APIs</span>
-                </div>
-              </div>
+              )}
             </div>
           </div>
 
@@ -84,15 +80,22 @@ export default async function AboutPage() {
               <div className="space-y-3">
                 <div className="p-3.5 rounded-xl bg-[#14100e] border border-[#352923]">
                   <span className="text-xs text-[#a39687] block">Primary Focus</span>
-                  <span className="text-sm font-bold text-[#faf7f2]">.NET Full Stack Development</span>
+                  <span className="text-sm font-bold text-[#faf7f2]">{profile.headline}</span>
+                </div>
+                <div className="p-3.5 rounded-xl bg-[#14100e] border border-[#352923]">
+                  <span className="text-xs text-[#a39687] block">Experience & Projects</span>
+                  <span className="text-sm font-bold text-[#faf7f2]">
+                    {about.yearsOfExperience &&
+                    about.yearsOfExperience !== "00" &&
+                    about.yearsOfExperience !== "0"
+                      ? about.yearsOfExperience
+                      : "Fresher"}{" "}
+                    • {about.projectsCompleted}
+                  </span>
                 </div>
                 <div className="p-3.5 rounded-xl bg-[#14100e] border border-[#352923]">
                   <span className="text-xs text-[#a39687] block">Location</span>
-                  <span className="text-sm font-bold text-[#faf7f2]">Pune, Maharashtra, India</span>
-                </div>
-                <div className="p-3.5 rounded-xl bg-[#14100e] border border-[#352923]">
-                  <span className="text-xs text-[#a39687] block">Positioning</span>
-                  <span className="text-sm font-bold text-[#faf7f2]">C# • ASP.NET Core • React • SQL Server</span>
+                  <span className="text-sm font-bold text-[#faf7f2]">{profile.location}</span>
                 </div>
               </div>
 
