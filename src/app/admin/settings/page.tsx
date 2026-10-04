@@ -8,18 +8,13 @@ import {
   Globe,
   CheckCircle2,
   AlertCircle,
-  Server,
-  KeyRound,
-  FileCheck,
-  Zap,
   ShieldCheck,
   UserCheck,
   Mail,
   Clock,
   Key,
 } from "lucide-react";
-import { isDatabaseConfigured, getDb, getSafeAdminUser } from "@/lib/db";
-
+import { isDatabaseConfigured, getSafeAdminUser, checkDatabaseHealth } from "@/lib/db";
 import { AccountSecurityManager } from "@/components/admin/AccountSecurityManager";
 
 export const revalidate = 0;
@@ -40,25 +35,44 @@ export default async function AdminSettingsPage() {
 
   const adminAccount = await getSafeAdminUser(session.username);
 
+  // Real database health check executing a roundtrip query
   const isDbConfigured = isDatabaseConfigured();
-  let isDbConnected = false;
-  let dbLatencyMs: number | null = null;
+  const { isConnected: isDbConnected, latencyMs: dbLatencyMs } = await checkDatabaseHealth();
 
-  if (isDbConfigured) {
+  // Parse actual database connection parameters
+  let dbProvider = "Local In-Memory / Fallback";
+  let dbSecurity = "Unencrypted / Local";
+  if (process.env.DATABASE_URL) {
     try {
-      const startTime = Date.now();
-      const db = getDb();
-      if (db) {
-        isDbConnected = true;
-        dbLatencyMs = Date.now() - startTime;
+      const dbUrl = new URL(process.env.DATABASE_URL);
+      if (dbUrl.hostname.includes("neon.tech")) {
+        dbProvider = "Neon Serverless PostgreSQL";
+      } else {
+        dbProvider = `PostgreSQL (${dbUrl.hostname})`;
       }
+      const sslMode = dbUrl.searchParams.get("sslmode");
+      dbSecurity = sslMode ? `TLS / SSL (${sslMode})` : "TLS / SSL Encrypted";
     } catch {
-      isDbConnected = false;
+      dbProvider = "PostgreSQL";
+      dbSecurity = "TLS / SSL";
     }
   }
 
+  // Application & Runtime details
   const isProd = process.env.NODE_ENV === "production";
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "Auto-configured via Vercel";
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:3000");
+
+  const hostingTarget = process.env.VERCEL
+    ? `Vercel (${process.env.VERCEL_ENV || "production"})`
+    : isProd
+    ? "Node.js Server (Production)"
+    : "Node.js (Development)";
 
   return (
     <div className="space-y-8">
@@ -198,7 +212,7 @@ export default async function AdminSettingsPage() {
 
       {/* Grid: 4 Diagnostic Sections */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* 1. Admin Account & Authentication */}
+        {/* 1. Admin Session Status */}
         <div className="glass-card p-6 sm:p-8 rounded-3xl border border-amber-500/25 space-y-5">
           <div className="flex items-center justify-between border-b border-[#261c17] pb-4">
             <div className="flex items-center gap-2.5">
@@ -223,16 +237,16 @@ export default async function AdminSettingsPage() {
             </div>
             <div className="flex items-center justify-between p-3 rounded-xl bg-[#140f0d] border border-[#261c17]">
               <span className="text-[#8f8072]">Session Token Standard</span>
-              <span className="text-emerald-400">JOSE JWT (HS256)</span>
+              <span className="text-emerald-400">{`JOSE JWT (HS256) • v${session.tokenVersion ?? 1}`}</span>
             </div>
             <div className="flex items-center justify-between p-3 rounded-xl bg-[#140f0d] border border-[#261c17]">
               <span className="text-[#8f8072]">Cookie Policy</span>
-              <span className="text-[#faf7f2]">HttpOnly • SameSite=Lax</span>
+              <span className="text-[#faf7f2]">{`HttpOnly • SameSite=Lax • ${isProd ? "Secure" : "Dev"}`}</span>
             </div>
           </div>
         </div>
 
-        {/* 2. Database Connection & Health */}
+        {/* 2. Database Engine */}
         <div className="glass-card p-6 sm:p-8 rounded-3xl border border-amber-500/25 space-y-5">
           <div className="flex items-center justify-between border-b border-[#261c17] pb-4">
             <div className="flex items-center gap-2.5">
@@ -241,13 +255,13 @@ export default async function AdminSettingsPage() {
               </div>
               <h2 className="text-base font-bold text-[#faf7f2]">Database Engine</h2>
             </div>
-            {isDbConfigured ? (
+            {isDbConnected ? (
               <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-mono text-emerald-400 font-semibold flex items-center gap-1">
                 <CheckCircle2 className="w-3 h-3" /> Neon PostgreSQL
               </span>
             ) : (
               <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-[10px] font-mono text-amber-400 font-semibold flex items-center gap-1">
-                <AlertCircle className="w-3 h-3" /> Local / Fallback
+                <AlertCircle className="w-3 h-3" /> {isDbConfigured ? "Connection Failed" : "Local / Fallback"}
               </span>
             )}
           </div>
@@ -255,7 +269,7 @@ export default async function AdminSettingsPage() {
           <div className="space-y-3 text-xs font-mono">
             <div className="flex items-center justify-between p-3 rounded-xl bg-[#140f0d] border border-[#261c17]">
               <span className="text-[#8f8072]">Cloud Provider</span>
-              <span className="text-[#faf7f2]">Neon Serverless Cloud</span>
+              <span className="text-[#faf7f2]">{dbProvider}</span>
             </div>
             <div className="flex items-center justify-between p-3 rounded-xl bg-[#140f0d] border border-[#261c17]">
               <span className="text-[#8f8072]">Driver / ORM</span>
@@ -263,18 +277,18 @@ export default async function AdminSettingsPage() {
             </div>
             <div className="flex items-center justify-between p-3 rounded-xl bg-[#140f0d] border border-[#261c17]">
               <span className="text-[#8f8072]">Connection Security</span>
-              <span className="text-emerald-400">TLS / SSL Encrypted</span>
+              <span className="text-emerald-400">{dbSecurity}</span>
             </div>
             <div className="flex items-center justify-between p-3 rounded-xl bg-[#140f0d] border border-[#261c17]">
               <span className="text-[#8f8072]">Status</span>
-              <span className="text-emerald-400 font-bold">
-                {isDbConnected ? `Online (${dbLatencyMs ?? "<5"}ms)` : "Connected"}
+              <span className={isDbConnected ? "text-emerald-400 font-bold" : "text-amber-400 font-bold"}>
+                {isDbConnected ? `Online (${dbLatencyMs}ms)` : isDbConfigured ? "Offline" : "Unconfigured"}
               </span>
             </div>
           </div>
         </div>
 
-        {/* 3. Application & Deployment Details */}
+        {/* 3. Application Deployment */}
         <div className="glass-card p-6 sm:p-8 rounded-3xl border border-amber-500/25 space-y-5">
           <div className="flex items-center justify-between border-b border-[#261c17] pb-4">
             <div className="flex items-center gap-2.5">
@@ -295,7 +309,7 @@ export default async function AdminSettingsPage() {
             </div>
             <div className="flex items-center justify-between p-3 rounded-xl bg-[#140f0d] border border-[#261c17]">
               <span className="text-[#8f8072]">Hosting Target</span>
-              <span className="text-[#faf7f2]">Vercel Edge / Serverless</span>
+              <span className="text-[#faf7f2]">{hostingTarget}</span>
             </div>
             <div className="flex items-center justify-between p-3 rounded-xl bg-[#140f0d] border border-[#261c17]">
               <span className="text-[#8f8072]">Public URL</span>
@@ -303,12 +317,12 @@ export default async function AdminSettingsPage() {
             </div>
             <div className="flex items-center justify-between p-3 rounded-xl bg-[#140f0d] border border-[#261c17]">
               <span className="text-[#8f8072]">Cache Strategy</span>
-              <span className="text-emerald-400">On-Demand Server Revalidation</span>
+              <span className="text-emerald-400">Dynamic Server Render (No Cache)</span>
             </div>
           </div>
         </div>
 
-        {/* 4. Security & Isolation Standard */}
+        {/* 4. Security Policies */}
         <div className="glass-card p-6 sm:p-8 rounded-3xl border border-amber-500/25 space-y-5">
           <div className="flex items-center justify-between border-b border-[#261c17] pb-4">
             <div className="flex items-center gap-2.5">
@@ -318,26 +332,26 @@ export default async function AdminSettingsPage() {
               <h2 className="text-base font-bold text-[#faf7f2]">Security Policies</h2>
             </div>
             <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-mono text-emerald-400 font-semibold">
-              Enforced
+              {isProd ? "Enforced (Strict)" : "Active (Dev Mode)"}
             </span>
           </div>
 
           <div className="space-y-3 text-xs font-mono">
             <div className="flex items-center justify-between p-3 rounded-xl bg-[#140f0d] border border-[#261c17]">
               <span className="text-[#8f8072]">Credential Redaction</span>
-              <span className="text-emerald-400">Zero Secret Leakage in UI</span>
+              <span className="text-emerald-400">Bcrypt (12 Rounds) • No Plaintext</span>
             </div>
             <div className="flex items-center justify-between p-3 rounded-xl bg-[#140f0d] border border-[#261c17]">
               <span className="text-[#8f8072]">Middleware Route Guard</span>
-              <span className="text-emerald-400">Active on /admin/*</span>
+              <span className="text-emerald-400">Active on /admin/* (JWT)</span>
             </div>
             <div className="flex items-center justify-between p-3 rounded-xl bg-[#140f0d] border border-[#261c17]">
               <span className="text-[#8f8072]">Fail-Closed Mode</span>
-              <span className="text-emerald-400">Enforced in Production</span>
+              <span className="text-emerald-400">{isProd ? "Enforced in Production" : "Development Mode"}</span>
             </div>
             <div className="flex items-center justify-between p-3 rounded-xl bg-[#140f0d] border border-[#261c17]">
               <span className="text-[#8f8072]">Database Storage</span>
-              <span className="text-emerald-400">Direct Neon Cloud Sync</span>
+              <span className="text-emerald-400">{isDbConfigured ? "Direct Neon Cloud Sync" : "Local In-Memory"}</span>
             </div>
           </div>
         </div>

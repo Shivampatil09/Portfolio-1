@@ -13,6 +13,7 @@ import {
   savePasswordResetToken,
   getPasswordResetByToken,
   completePasswordReset,
+  invalidatePasswordReset,
 } from "@/lib/db";
 import {
   generateNumericOtp,
@@ -94,10 +95,15 @@ export async function requestPasswordResetAction(formData: { email: string }) {
     });
 
     if (!emailResult.success) {
+      if (resetRecord?.id) {
+        await invalidatePasswordReset(resetRecord.id);
+      }
       return {
         success: false,
         message:
-          "Unable to send verification email. Please check email service configuration or try again later.",
+          emailResult.error && !emailResult.error.toLowerCase().includes("key")
+            ? emailResult.error
+            : "Unable to send verification email. Please check email service configuration or try again later.",
       };
     }
 

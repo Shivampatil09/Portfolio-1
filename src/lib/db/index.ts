@@ -53,11 +53,32 @@ export function getDb() {
   if (!isDatabaseConfigured()) return null;
   if (_db) return _db;
   try {
-    const sql = neon(process.env.DATABASE_URL!);
-    _db = drizzle(sql, { schema });
+    const sqlClient = neon(process.env.DATABASE_URL!);
+    _db = drizzle(sqlClient, { schema });
     return _db;
   } catch {
     return null;
+  }
+}
+
+export async function checkDatabaseHealth(): Promise<{
+  isConnected: boolean;
+  latencyMs: number | null;
+}> {
+  if (!isDatabaseConfigured()) {
+    return { isConnected: false, latencyMs: null };
+  }
+  const db = getDb();
+  if (!db) {
+    return { isConnected: false, latencyMs: null };
+  }
+  try {
+    const start = performance.now();
+    await db.execute(sql`SELECT 1`);
+    const latencyMs = Math.round(performance.now() - start);
+    return { isConnected: true, latencyMs };
+  } catch {
+    return { isConnected: false, latencyMs: null };
   }
 }
 
@@ -1586,6 +1607,28 @@ export async function completePasswordReset(
 
   inMemoryResets = inMemoryResets.map((r) =>
     r.adminId === adminId ? { ...r, isConsumed: true } : r
+  );
+  return true;
+}
+
+export async function invalidatePasswordReset(id: string): Promise<boolean> {
+  if (isDatabaseConfigured()) {
+    const db = getDb();
+    if (db) {
+      try {
+        await db
+          .update(schema.adminPasswordResetsTable)
+          .set({ isConsumed: true })
+          .where(eq(schema.adminPasswordResetsTable.id, id));
+        return true;
+      } catch {
+        return false;
+      }
+    }
+  }
+
+  inMemoryResets = inMemoryResets.map((item) =>
+    item.id === id ? { ...item, isConsumed: true } : item
   );
   return true;
 }

@@ -640,13 +640,13 @@ export function AccountSecurityManager({
                   </label>
                   <input
                     type="email"
-                    required
+                    disabled
                     placeholder="e.g. yourname@example.com"
                     value={emailForm.newEmail}
                     onChange={(e) =>
                       setEmailForm({ ...emailForm, newEmail: e.target.value })
                     }
-                    className="w-full px-4 py-2.5 rounded-xl bg-[#140f0d] border border-[#2d221c] text-[#faf7f2] placeholder-[#6e6357] text-xs font-mono focus:border-amber-500/60 focus:outline-none transition-colors"
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#140f0d] border border-[#2d221c] text-[#faf7f2] placeholder-[#6e6357] text-xs font-mono focus:border-amber-500/60 focus:outline-none transition-colors opacity-60 cursor-not-allowed"
                   />
                   <p className="text-[10px] font-mono text-[#6e6357]">
                     A 6-digit verification code will be sent to this address
@@ -660,7 +660,7 @@ export function AccountSecurityManager({
                   </label>
                   <input
                     type="password"
-                    required
+                    disabled
                     placeholder="Enter current password"
                     value={emailForm.currentPassword}
                     onChange={(e) =>
@@ -669,7 +669,7 @@ export function AccountSecurityManager({
                         currentPassword: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-2.5 rounded-xl bg-[#140f0d] border border-[#2d221c] text-[#faf7f2] placeholder-[#6e6357] text-xs font-mono focus:border-amber-500/60 focus:outline-none transition-colors"
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#140f0d] border border-[#2d221c] text-[#faf7f2] placeholder-[#6e6357] text-xs font-mono focus:border-amber-500/60 focus:outline-none transition-colors opacity-60 cursor-not-allowed"
                   />
                   <p className="text-[10px] font-mono text-[#6e6357]">
                     Required to authorize verification code dispatch
@@ -679,25 +679,13 @@ export function AccountSecurityManager({
 
               <div className="flex justify-end pt-2">
                 <button
-                  type="submit"
-                  disabled={
-                    emailLoading ||
-                    !emailForm.newEmail ||
-                    !emailForm.currentPassword
-                  }
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 text-black text-xs font-mono font-bold hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer shadow-lg shadow-amber-500/10"
+                  type="button"
+                  disabled={true}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#261c17] text-[#6e6357] border border-[#3b2d24] text-xs font-mono font-bold cursor-not-allowed opacity-60 transition-all shadow-none"
+                  title="Recovery email modifications are currently disabled"
                 >
-                  {emailLoading ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Sending Verification Code...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-3.5 h-3.5" />
-                      <span>Send Verification Code</span>
-                    </>
-                  )}
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Send Verification Code</span>
                 </button>
               </div>
             </form>
