@@ -4,7 +4,14 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Send, Loader2, CheckCircle2, User, Mail, MessageSquare } from "lucide-react";
+import {
+  Send,
+  Loader2,
+  CheckCircle2,
+  User,
+  Mail,
+  MessageSquare,
+} from "lucide-react";
 import { contactFormSchema, ContactFormData } from "@/lib/validations";
 import { submitContactMessage } from "@/actions/contact";
 
@@ -33,7 +40,8 @@ export function ContactForm() {
       if (res.success) {
         setIsSubmitted(true);
         toast.success("Message Sent Successfully!", {
-          description: "Thank you for reaching out. Shivam will get back to you soon.",
+          description:
+            "Thank you for reaching out. Shivam will get back to you soon.",
         });
         reset();
       } else {
@@ -57,14 +65,17 @@ export function ContactForm() {
           <CheckCircle2 className="w-8 h-8" />
         </div>
         <div className="space-y-2">
-          <h3 className="text-2xl font-bold text-[#faf7f2]">Thank You for Reaching Out!</h3>
-          <p className="text-sm text-[#b8ada0] max-w-md mx-auto">
-            Your message has been stored and received. Shivam Patil will review your inquiry and get back to you promptly.
+          <h3 className="text-2xl font-bold text-[#f1eee8]">
+            Thank You for Reaching Out!
+          </h3>
+          <p className="text-sm text-[#c0b8ad] max-w-md mx-auto">
+            Your message has been stored and received. Shivam Patil will review
+            your inquiry and get back to you promptly.
           </p>
         </div>
         <button
           onClick={() => setIsSubmitted(false)}
-          className="px-6 py-2.5 rounded-xl bg-[#1f1814] border border-[#3d2e24] text-xs font-semibold text-amber-300 hover:border-amber-500/40"
+          className="px-6 py-2.5 rounded-xl bg-[#14110f] border border-[#2a2118] text-xs font-semibold text-[#edbb5f] hover:border-[#edbb5f]/40 hover:-translate-y-0.5 active:scale-[0.98] transition-all cursor-pointer"
         >
           Send Another Message
         </button>
@@ -73,7 +84,10 @@ export function ContactForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="glass-card p-6 sm:p-10 rounded-3xl space-y-6 border border-amber-500/25">
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="glass-card p-6 sm:p-10 rounded-3xl space-y-6 border border-[#2a2118]"
+    >
       {serverError && (
         <div className="p-3.5 rounded-xl bg-red-500/15 border border-red-500/30 text-red-400 text-xs font-medium">
           {serverError}
@@ -82,11 +96,11 @@ export function ContactForm() {
 
       {/* Name */}
       <div className="space-y-2">
-        <label className="block text-xs font-mono uppercase tracking-wider text-[#cfc5b8] font-semibold">
-          Your Name <span className="text-amber-400">*</span>
+        <label className="block text-xs font-mono uppercase tracking-wider text-[#c0b8ad] font-semibold">
+          Your Name <span className="text-[#edbb5f]">*</span>
         </label>
         <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#7c7062]">
+          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#827a70]">
             <User className="w-4 h-4" />
           </div>
           <input
@@ -94,21 +108,23 @@ export function ContactForm() {
             type="text"
             placeholder="e.g. John Doe"
             disabled={isSubmitting}
-            className="w-full pl-10 pr-4 py-3 rounded-xl bg-[#14100e] border border-[#3b2d24] text-sm text-[#faf7f2] placeholder-[#6e6357] focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all disabled:opacity-50"
+            className="w-full pl-10 pr-4 py-3 rounded-xl bg-[#14110f] border border-[#2a2118] text-sm text-[#f1eee8] placeholder-[#827a70] focus:outline-none focus:border-[#edbb5f]/50 focus:ring-1 focus:ring-[#edbb5f]/30 transition-all disabled:opacity-50"
           />
         </div>
         {errors.name && (
-          <p className="text-xs text-red-400 font-mono mt-1">{errors.name.message}</p>
+          <p className="text-xs text-red-400 font-mono mt-1">
+            {errors.name.message}
+          </p>
         )}
       </div>
 
       {/* Email */}
       <div className="space-y-2">
-        <label className="block text-xs font-mono uppercase tracking-wider text-[#cfc5b8] font-semibold">
-          Your Email Address <span className="text-amber-400">*</span>
+        <label className="block text-xs font-mono uppercase tracking-wider text-[#c0b8ad] font-semibold">
+          Your Email Address <span className="text-[#edbb5f]">*</span>
         </label>
         <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#7c7062]">
+          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#827a70]">
             <Mail className="w-4 h-4" />
           </div>
           <input
@@ -116,21 +132,23 @@ export function ContactForm() {
             type="email"
             placeholder="e.g. john@example.com"
             disabled={isSubmitting}
-            className="w-full pl-10 pr-4 py-3 rounded-xl bg-[#14100e] border border-[#3b2d24] text-sm text-[#faf7f2] placeholder-[#6e6357] focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all disabled:opacity-50"
+            className="w-full pl-10 pr-4 py-3 rounded-xl bg-[#14110f] border border-[#2a2118] text-sm text-[#f1eee8] placeholder-[#827a70] focus:outline-none focus:border-[#edbb5f]/50 focus:ring-1 focus:ring-[#edbb5f]/30 transition-all disabled:opacity-50"
           />
         </div>
         {errors.email && (
-          <p className="text-xs text-red-400 font-mono mt-1">{errors.email.message}</p>
+          <p className="text-xs text-red-400 font-mono mt-1">
+            {errors.email.message}
+          </p>
         )}
       </div>
 
       {/* Message */}
       <div className="space-y-2">
-        <label className="block text-xs font-mono uppercase tracking-wider text-[#cfc5b8] font-semibold">
-          Project or Opportunity Details <span className="text-amber-400">*</span>
+        <label className="block text-xs font-mono uppercase tracking-wider text-[#c0b8ad] font-semibold">
+          Project or Opportunity Details <span className="text-[#edbb5f]">*</span>
         </label>
         <div className="relative">
-          <div className="absolute top-3.5 left-3.5 pointer-events-none text-[#7c7062]">
+          <div className="absolute top-3.5 left-3.5 pointer-events-none text-[#827a70]">
             <MessageSquare className="w-4 h-4" />
           </div>
           <textarea
@@ -138,11 +156,13 @@ export function ContactForm() {
             rows={5}
             placeholder="Describe your project, hiring opportunity, or inquiry..."
             disabled={isSubmitting}
-            className="w-full pl-10 pr-4 py-3 rounded-xl bg-[#14100e] border border-[#3b2d24] text-sm text-[#faf7f2] placeholder-[#6e6357] focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all disabled:opacity-50 resize-none"
+            className="w-full pl-10 pr-4 py-3 rounded-xl bg-[#14110f] border border-[#2a2118] text-sm text-[#f1eee8] placeholder-[#827a70] focus:outline-none focus:border-[#edbb5f]/50 focus:ring-1 focus:ring-[#edbb5f]/30 transition-all disabled:opacity-50 resize-none"
           />
         </div>
         {errors.message && (
-          <p className="text-xs text-red-400 font-mono mt-1">{errors.message.message}</p>
+          <p className="text-xs text-red-400 font-mono mt-1">
+            {errors.message.message}
+          </p>
         )}
       </div>
 
@@ -150,16 +170,16 @@ export function ContactForm() {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl font-bold text-sm text-[#090807] bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:shadow-[0_0_30px_rgba(245,158,11,0.5)] hover:brightness-110 active:scale-[0.99] transition-all disabled:opacity-60 cursor-pointer"
+        className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl font-bold text-sm text-[#060605] bg-[#edbb5f] hover:bg-[#edbb5f]/90 shadow-[0_4px_20px_rgba(237,187,95,0.22)] hover:shadow-[0_6px_25px_rgba(237,187,95,0.35)] hover:brightness-105 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-200 disabled:opacity-60 cursor-pointer"
       >
         {isSubmitting ? (
           <>
-            <Loader2 className="w-4 h-4 animate-spin text-[#090807]" />
+            <Loader2 className="w-4 h-4 animate-spin text-[#060605]" />
             <span>Sending Message...</span>
           </>
         ) : (
           <>
-            <Send className="w-4 h-4 text-[#090807]" />
+            <Send className="w-4 h-4 text-[#060605]" />
             <span>Send Message</span>
           </>
         )}

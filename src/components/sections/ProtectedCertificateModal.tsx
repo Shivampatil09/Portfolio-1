@@ -86,7 +86,7 @@ export function ProtectedCertificateModal({
       ctx.fillRect(0, canvas.height - barHeight, canvas.width, barHeight);
 
       // Watermark Text
-      ctx.fillStyle = "rgba(229, 169, 60, 0.9)";
+      ctx.fillStyle = "rgba(237, 187, 95, 0.85)";
       ctx.font = `bold ${Math.max(14, Math.floor(barHeight * 0.45))}px monospace`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
@@ -124,28 +124,28 @@ export function ProtectedCertificateModal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ type: "spring", duration: 0.35 }}
-          className="relative w-full max-w-4xl bg-[#14100E] border border-amber-500/25 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] z-10 select-none"
+          className="relative w-full max-w-4xl bg-[#120f0d] border border-[#edbb5f]/30 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] z-10 select-none"
           onContextMenu={(e) => e.preventDefault()}
         >
           {/* Modal Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-[#352923] bg-[#1a1411]">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-[#2a2118] bg-[#14110f]">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              <div className="p-2 rounded-xl bg-[#edbb5f]/15 text-[#edbb5f] border border-[#edbb5f]/30">
                 <Award className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-[#faf7f2] leading-tight">
+                <h3 className="text-base font-bold text-[#f1eee8] leading-tight">
                   {certification.title}
                 </h3>
-                <p className="text-xs font-mono text-amber-400 mt-0.5">
+                <p className="text-xs font-mono text-[#edbb5f] mt-0.5">
                   Issued by {certification.issuer} • {certification.issueDate}
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[11px] font-mono text-amber-300">
-                <Lock className="w-3 h-3 text-amber-400" /> View-Only Protected
+              <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#edbb5f]/15 border border-[#edbb5f]/30 text-[11px] font-mono text-[#edbb5f]">
+                <Lock className="w-3 h-3 text-[#edbb5f]" /> View-Only Protected
               </span>
 
               {certification.credentialUrl && (
@@ -153,7 +153,7 @@ export function ProtectedCertificateModal({
                   href={certification.credentialUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#261d17] hover:bg-[#352923] border border-[#3d2e24] text-xs font-semibold text-amber-300 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1c140e] hover:bg-[#2a2118] border border-[#2a2118] text-xs font-semibold text-[#edbb5f] transition-colors"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   <span className="hidden md:inline">Verify Credential</span>
@@ -162,7 +162,7 @@ export function ProtectedCertificateModal({
 
               <button
                 onClick={onClose}
-                className="p-2 rounded-xl bg-[#261d17] hover:bg-[#352923] text-[#a39687] hover:text-[#faf7f2] border border-[#3d2e24] transition-colors"
+                className="p-2 rounded-xl bg-[#1c140e] hover:bg-[#2a2118] text-[#827a70] hover:text-[#f1eee8] border border-[#2a2118] transition-colors cursor-pointer"
                 aria-label="Close"
               >
                 <X className="w-4 h-4" />
@@ -171,10 +171,10 @@ export function ProtectedCertificateModal({
           </div>
 
           {/* Certificate Content Viewer */}
-          <div className="flex-1 overflow-auto p-4 sm:p-6 bg-[#0a0807] flex items-center justify-center relative select-none">
+          <div className="flex-1 overflow-auto p-4 sm:p-6 bg-[#060605] flex items-center justify-center relative select-none">
             {certification.certificateFileUrl ? (
               certification.fileType === "pdf" ? (
-                <div className="w-full h-[65vh] relative rounded-2xl overflow-hidden border border-[#2d221c]">
+                <div className="w-full h-[65vh] relative rounded-2xl overflow-hidden border border-[#2a2118]">
                   {/* Top transparent protective shield over browser PDF toolbar */}
                   <div className="absolute top-0 inset-x-0 h-12 z-20 pointer-events-auto bg-transparent" />
                   <iframe
@@ -187,21 +187,21 @@ export function ProtectedCertificateModal({
                 <div className="relative max-w-full flex items-center justify-center">
                   {!imageLoaded && !loadError && (
                     <div className="py-24 text-center space-y-2">
-                      <div className="w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto" />
-                      <p className="text-xs font-mono text-[#a39687]">Rendering secure certificate canvas...</p>
+                      <div className="w-8 h-8 border-2 border-[#edbb5f] border-t-transparent rounded-full animate-spin mx-auto" />
+                      <p className="text-xs font-mono text-[#827a70]">Rendering secure certificate canvas...</p>
                     </div>
                   )}
 
                   {loadError && (
-                    <div className="py-16 text-center text-[#a39687] space-y-2">
-                      <AlertCircle className="w-8 h-8 text-amber-400 mx-auto" />
-                      <p className="text-sm font-semibold text-[#faf7f2]">Failed to load certificate preview</p>
+                    <div className="py-16 text-center text-[#827a70] space-y-2">
+                      <AlertCircle className="w-8 h-8 text-[#edbb5f] mx-auto" />
+                      <p className="text-sm font-semibold text-[#f1eee8]">Failed to load certificate preview</p>
                     </div>
                   )}
 
                   <canvas
                     ref={canvasRef}
-                    className={`max-h-[68vh] w-auto max-w-full rounded-xl shadow-2xl border border-amber-500/20 pointer-events-none transition-opacity duration-300 ${
+                    className={`max-h-[68vh] w-auto max-w-full rounded-xl shadow-2xl border border-[#edbb5f]/30 pointer-events-none transition-opacity duration-300 ${
                       imageLoaded ? "opacity-100" : "opacity-0"
                     }`}
                   />
@@ -209,15 +209,15 @@ export function ProtectedCertificateModal({
               )
             ) : (
               <div className="py-20 text-center space-y-3">
-                <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center mx-auto">
+                <div className="w-14 h-14 rounded-2xl bg-[#edbb5f]/15 text-[#edbb5f] border border-[#edbb5f]/30 flex items-center justify-center mx-auto">
                   <ShieldCheck className="w-7 h-7" />
                 </div>
-                <h4 className="text-lg font-bold text-[#faf7f2]">Verified Credential</h4>
-                <p className="text-xs text-[#a39687] max-w-md mx-auto">
+                <h4 className="text-lg font-bold text-[#f1eee8]">Verified Credential</h4>
+                <p className="text-xs text-[#827a70] max-w-md mx-auto">
                   {certification.description || "Completed official technical assessment and earned certified credential."}
                 </p>
                 {certification.credentialId && (
-                  <p className="inline-block px-3 py-1 rounded-full bg-[#1c1511] border border-[#3d2e24] text-xs font-mono text-amber-400">
+                  <p className="inline-block px-3 py-1 rounded-full bg-[#14110f] border border-[#2a2118] text-xs font-mono text-[#edbb5f]">
                     Credential ID: {certification.credentialId}
                   </p>
                 )}
@@ -226,13 +226,13 @@ export function ProtectedCertificateModal({
           </div>
 
           {/* Modal Footer Metadata */}
-          <div className="px-6 py-3 border-t border-[#352923] bg-[#14100E] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs font-mono text-[#a39687]">
+          <div className="px-6 py-3 border-t border-[#2a2118] bg-[#120f0d] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs font-mono text-[#827a70]">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
               <span>Shivam Patil • .NET Full Stack Developer</span>
             </div>
             {certification.credentialId && (
-              <span className="text-[#8A7866]">ID: {certification.credentialId}</span>
+              <span className="text-[#827a70]/80">ID: {certification.credentialId}</span>
             )}
           </div>
         </motion.div>

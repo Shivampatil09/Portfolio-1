@@ -24,18 +24,20 @@ const CODE_TOKENS = [
   "async Task",
   "EF Core",
   "200 OK",
+  "JWT",
+  "Next.js",
   "IMediator",
   "SOLID",
 ];
 
-export function HeroBackground() {
+export function PublicBackground() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const spotlightRef = useRef<HTMLDivElement>(null);
 
-  // 1. Smooth, High-Performance Mouse Spotlight (Direct CSS Property updates, 0 React Rerenders)
+  // 1. Smooth Mouse Spotlight (Direct style updates without React re-renders)
   useEffect(() => {
-    // Disable on touch screens / mobile
+    // Disable on touch / mobile screens
     if (window.innerWidth < 768) return;
 
     let rafId: number;
