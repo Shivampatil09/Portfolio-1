@@ -81,12 +81,6 @@ export const verifyEmailChangeOtpSchema = z.object({
 export type VerifyEmailChangeOtpData = z.infer<typeof verifyEmailChangeOtpSchema>;
 
 // Password Recovery Schemas
-export const directRecoverySchema = z.object({
-  recoverySecret: z.string().min(1, "Emergency recovery secret is required"),
-});
-
-export type DirectRecoveryData = z.infer<typeof directRecoverySchema>;
-
 export const forgotPasswordSchema = z.object({
   email: z.string().email("Please provide a valid recovery email address"),
 });

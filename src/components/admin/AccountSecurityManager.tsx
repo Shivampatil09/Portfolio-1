@@ -608,7 +608,7 @@ export function AccountSecurityManager({
               </span>
             </div>
             <span className="text-[11px] text-[#6e6357] max-w-sm">
-              Password recovery on the login portal uses Direct Secure Recovery. You can optionally link and verify a recovery email address here for email-based workflows when a verified email service is active.
+              Your recovery email receives emergency 6-digit OTP verification codes during password recovery. A verification code must be confirmed before any changes take effect.
             </span>
           </div>
 
